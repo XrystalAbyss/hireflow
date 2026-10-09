@@ -29,3 +29,11 @@ replay_pid*
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Local credentials and configuration files
+*.local.properties
+hireflow-local.properties
+.env
+.env.*
+*.secret
+

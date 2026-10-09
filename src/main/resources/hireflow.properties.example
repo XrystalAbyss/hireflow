@@ -1,0 +1,20 @@
+# ==============================================================================
+# HireFlow Storage & Database Configuration Template
+# Copy to 'hireflow-local.properties' (gitignored) or configure via environment.
+# ==============================================================================
+
+# Runtime Storage Mode: IN_MEMORY, JDBC_DEV, or JDBC_TEST
+hireflow.storage.mode=IN_MEMORY
+
+# PostgreSQL Connection Properties
+hireflow.db.url=jdbc:postgresql://localhost:5432/hireflow_dev
+hireflow.db.user=hireflow_user
+hireflow.db.password=
+
+# HikariCP Connection Pool Settings
+hireflow.db.pool.maximum-size=10
+hireflow.db.pool.minimum-idle=2
+hireflow.db.pool.idle-timeout-ms=30000
+hireflow.db.pool.connection-timeout-ms=20000
+hireflow.db.pool.max-lifetime-ms=600000
+hireflow.db.pool.leak-detection-threshold-ms=10000
