@@ -216,7 +216,7 @@ This runs the complete step-by-step console test script:
 
 ---
 
-## 6. Preloaded Sample Demonstration
+## 6. Preloaded Sample Demonstration Data
 
 Upon launch, HireFlow automatically initializes with a sample dataset:
 - **11 Students:** Representing CSE, IT, ECE, MECH, and CIVIL with varying CGPAs (6.50 – 9.50) and active/inactive statuses.
