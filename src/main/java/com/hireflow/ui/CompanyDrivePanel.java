@@ -35,6 +35,7 @@ public class CompanyDrivePanel extends JPanel {
     private JTextField minCgpaField;
     private JTextField branchesField;
     private JTextField deadlineField;
+    private JButton btnCreateDrive;
 
     // Companies Table & Inputs
     private DefaultTableModel companyModel;
@@ -174,7 +175,7 @@ public class CompanyDrivePanel extends JPanel {
         deadlineField.setText(LocalDate.now().plusDays(14).toString());
         formPanel.add(deadlineField, gbcRow(gbc, row++));
 
-        JButton btnCreateDrive = UIUtils.createSuccessButton("Publish Recruitment Drive");
+        btnCreateDrive = UIUtils.createSuccessButton("Publish Recruitment Drive");
         btnCreateDrive.addActionListener(e -> handleCreateDrive());
         gbc.insets = new Insets(14, 4, 5, 4);
         formPanel.add(btnCreateDrive, gbcRow(gbc, row));
@@ -425,5 +426,32 @@ public class CompanyDrivePanel extends JPanel {
                     active ? "Active" : "Deadline Expired"
             });
         }
+    }
+
+    public JTextField getDriveIdField() { return driveIdField; }
+    public JComboBox<String> getCompanyDropdown() { return companyDropdown; }
+    public JTextField getJobTitleField() { return jobTitleField; }
+    public JTextField getMinCgpaField() { return minCgpaField; }
+    public JTextField getBranchesField() { return branchesField; }
+    public JTextField getDeadlineField() { return deadlineField; }
+    public JButton getBtnCreateDrive() { return btnCreateDrive; }
+
+    /**
+     * Programmatically populates the GUI form fields and simulates the user clicking
+     * the "Publish Recruitment Drive" button via btnCreateDrive.doClick(), executing
+     * the actual GUI event handler.
+     */
+    public void submitDriveForm(String driveId, String companyItem, String jobTitle, double minCgpa, String branches, String deadline) {
+        driveIdField.setText(driveId);
+        if (companyItem != null) {
+            companyDropdown.setSelectedItem(companyItem);
+        } else if (companyDropdown.getItemCount() > 0) {
+            companyDropdown.setSelectedIndex(0);
+        }
+        jobTitleField.setText(jobTitle);
+        minCgpaField.setText(String.valueOf(minCgpa));
+        branchesField.setText(branches);
+        deadlineField.setText(deadline);
+        btnCreateDrive.doClick();
     }
 }

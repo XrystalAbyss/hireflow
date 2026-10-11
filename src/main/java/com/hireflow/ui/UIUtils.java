@@ -187,17 +187,38 @@ public final class UIUtils {
         return card;
     }
 
+    private static volatile boolean suppressDialogsForTesting = false;
+
+    public static void setSuppressDialogsForTesting(boolean suppress) {
+        suppressDialogsForTesting = suppress;
+    }
+
+    public static boolean isSuppressDialogsForTesting() {
+        return suppressDialogsForTesting;
+    }
+
     public static void showSuccess(Component parent, String message, String title) {
+        if (suppressDialogsForTesting || GraphicsEnvironment.isHeadless()) {
+            return;
+        }
         JOptionPane.showMessageDialog(parent, message, title, JOptionPane.INFORMATION_MESSAGE);
     }
 
     public static void showError(Component parent, String message, String title) {
         String sanitized = sanitizeDisplayMessage(message);
+        if (suppressDialogsForTesting || GraphicsEnvironment.isHeadless()) {
+            System.err.println("[UIUtils Error Dialog Suppressed] " + title + ": " + sanitized);
+            return;
+        }
         JOptionPane.showMessageDialog(parent, sanitized, title, JOptionPane.ERROR_MESSAGE);
     }
 
     public static void showWarning(Component parent, String message, String title) {
         String sanitized = sanitizeDisplayMessage(message);
+        if (suppressDialogsForTesting || GraphicsEnvironment.isHeadless()) {
+            System.err.println("[UIUtils Warning Dialog Suppressed] " + title + ": " + sanitized);
+            return;
+        }
         JOptionPane.showMessageDialog(parent, sanitized, title, JOptionPane.WARNING_MESSAGE);
     }
 

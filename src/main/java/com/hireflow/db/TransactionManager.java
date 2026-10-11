@@ -29,6 +29,7 @@ public class TransactionManager {
 
     private static final ThreadLocal<Connection> CURRENT_CONNECTION = new ThreadLocal<>();
     private static final ThreadLocal<Boolean> ROLLBACK_ONLY = ThreadLocal.withInitial(() -> Boolean.FALSE);
+    private static final ThreadLocal<java.util.List<Runnable>> POST_COMMIT_ACTIONS = new ThreadLocal<>();
     private static final int DEFAULT_MAX_RETRIES = 3;
     private static final long INITIAL_BACKOFF_MS = 50;
 
@@ -51,6 +52,27 @@ public class TransactionManager {
 
     public boolean isTransactionActive() {
         return CURRENT_CONNECTION.get() != null;
+    }
+
+    public static boolean isCurrentTransactionActive() {
+        return CURRENT_CONNECTION.get() != null;
+    }
+
+    /**
+     * Registers a post-commit callback that executes only after the current active transaction
+     * has successfully committed to the database.
+     * If no transaction is active on the current thread, the action executes immediately.
+     */
+    public static void registerPostCommitAction(Runnable action) {
+        if (action == null) {
+            return;
+        }
+        java.util.List<Runnable> actions = POST_COMMIT_ACTIONS.get();
+        if (actions != null) {
+            actions.add(action);
+        } else {
+            action.run();
+        }
     }
 
     /**
@@ -129,9 +151,12 @@ public class TransactionManager {
     private <T> T executeSingleTransaction(TransactionCallback<T> action) throws Throwable {
         Connection physicalConn = null;
         Throwable primaryException = null;
+        T result = null;
+        java.util.List<Runnable> hooks = null;
 
         try {
             ROLLBACK_ONLY.set(Boolean.FALSE);
+            POST_COMMIT_ACTIONS.set(new java.util.ArrayList<>());
             physicalConn = dataSource.getConnection();
             physicalConn.setAutoCommit(false);
 
@@ -139,7 +164,7 @@ public class TransactionManager {
             Connection transactionalConn = createCloseSuppressingProxy(physicalConn);
             CURRENT_CONNECTION.set(transactionalConn);
 
-            T result = action.execute(transactionalConn);
+            result = action.execute(transactionalConn);
 
             if (isRollbackOnly()) {
                 throw new DatabaseException(
@@ -148,7 +173,7 @@ public class TransactionManager {
             }
 
             physicalConn.commit();
-            return result;
+            hooks = POST_COMMIT_ACTIONS.get();
         } catch (Throwable ex) {
             primaryException = ex;
             if (physicalConn != null) {
@@ -163,6 +188,7 @@ public class TransactionManager {
         } finally {
             CURRENT_CONNECTION.remove();
             ROLLBACK_ONLY.remove();
+            POST_COMMIT_ACTIONS.remove();
             if (physicalConn != null) {
                 try {
                     if (!physicalConn.isClosed()) {
@@ -179,6 +205,21 @@ public class TransactionManager {
                 }
             }
         }
+
+        // Post-commit actions execute strictly after database commit has succeeded and connection returned to pool.
+        // Notification failures are safely caught and logged separately from database success,
+        // guaranteeing that an alert/broadcasting error never turns a committed operation into an apparent failure.
+        if (hooks != null) {
+            for (Runnable hook : hooks) {
+                try {
+                    hook.run();
+                } catch (Exception hookEx) {
+                    System.err.println("[TransactionManager] Post-commit notification error: " + hookEx.getMessage());
+                }
+            }
+        }
+
+        return result;
     }
 
     /**
@@ -200,13 +241,6 @@ public class TransactionManager {
      */
     public static Connection getCurrentConnection() {
         return CURRENT_CONNECTION.get();
-    }
-
-    /**
-     * Checks whether an active transaction is bound to the current thread.
-     */
-    public static boolean isCurrentTransactionActive() {
-        return CURRENT_CONNECTION.get() != null;
     }
 
     /**

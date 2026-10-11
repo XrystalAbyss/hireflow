@@ -33,6 +33,7 @@ public class MainFrame extends JFrame {
     public static final String SCREEN_DRIVES = "DRIVES";
     public static final String SCREEN_APPLICATIONS = "APPLICATIONS";
     public static final String SCREEN_SCHEDULE = "SCHEDULE";
+    public static final String SCREEN_NETWORKING = "NETWORKING";
 
     // Application context and mode
     private final ApplicationContext applicationContext;
@@ -62,6 +63,7 @@ public class MainFrame extends JFrame {
     private CompanyDrivePanel companyDrivePanel;
     private ApplicationPanel applicationPanel;
     private SchedulePanel schedulePanel;
+    private NetworkingPanel networkingPanel;
 
     // Sidebar navigation buttons
     private final Map<String, JButton> navButtons = new HashMap<>();
@@ -243,11 +245,14 @@ public class MainFrame extends JFrame {
                 onDataChanged
         );
 
+        networkingPanel = new NetworkingPanel(applicationContext != null ? applicationContext : ApplicationContext.createInMemory());
+
         contentContainer.add(dashboardPanel, SCREEN_DASHBOARD);
         contentContainer.add(studentPanel, SCREEN_STUDENTS);
         contentContainer.add(companyDrivePanel, SCREEN_DRIVES);
         contentContainer.add(applicationPanel, SCREEN_APPLICATIONS);
         contentContainer.add(schedulePanel, SCREEN_SCHEDULE);
+        contentContainer.add(networkingPanel, SCREEN_NETWORKING);
 
         add(contentContainer, BorderLayout.CENTER);
 
@@ -320,6 +325,7 @@ public class MainFrame extends JFrame {
         addNavButton(navList, SCREEN_DRIVES, "  Companies & Drives", "Manage drives & partners");
         addNavButton(navList, SCREEN_APPLICATIONS, "  Applications", "Eligibility & candidate pipeline");
         addNavButton(navList, SCREEN_SCHEDULE, "  Interview Scheduler", "Greedy allocation engine");
+        addNavButton(navList, SCREEN_NETWORKING, "  Networking", "TCP Server & live broadcasts");
 
         sidebar.add(navList, BorderLayout.CENTER);
 
@@ -437,6 +443,10 @@ public class MainFrame extends JFrame {
             }
         }
 
+        if (SCREEN_NETWORKING.equals(screenKey) && networkingPanel != null) {
+            networkingPanel.refreshMetrics();
+        }
+
         updateStatusBar();
     }
 
@@ -481,6 +491,9 @@ public class MainFrame extends JFrame {
         companyDrivePanel.refreshAll();
         applicationPanel.refreshAll();
         schedulePanel.refreshConfirmedTable();
+        if (networkingPanel != null) {
+            networkingPanel.refreshMetrics();
+        }
         updateStatusBar();
     }
 
@@ -568,5 +581,33 @@ public class MainFrame extends JFrame {
             appService.shortlistApplication(a5.getId());
         } catch (Exception ignored) {
         }
+    }
+
+    public NetworkingPanel getNetworkingPanel() {
+        return networkingPanel;
+    }
+
+    public DashboardPanel getDashboardPanel() {
+        return dashboardPanel;
+    }
+
+    public StudentPanel getStudentPanel() {
+        return studentPanel;
+    }
+
+    public CompanyDrivePanel getCompanyDrivePanel() {
+        return companyDrivePanel;
+    }
+
+    public ApplicationPanel getApplicationPanel() {
+        return applicationPanel;
+    }
+
+    public SchedulePanel getSchedulePanel() {
+        return schedulePanel;
+    }
+
+    public String getCurrentScreen() {
+        return currentScreen;
     }
 }

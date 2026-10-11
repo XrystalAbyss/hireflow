@@ -6,8 +6,10 @@ import com.hireflow.repository.*;
 import com.hireflow.scheduler.ConflictChecker;
 import com.hireflow.scheduler.GreedyScheduler;
 import com.hireflow.scheduler.SchedulingEngine;
+import com.hireflow.network.server.HireFlowTcpServer;
 import com.hireflow.service.*;
 
+import java.io.IOException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -53,6 +55,9 @@ public class ApplicationContext implements AutoCloseable {
     private final ApplicationService applicationService;
     private final InterviewService interviewService;
     private final SchedulingEngine schedulingEngine;
+
+    // TCP Networking Subsystem (Stage 2C.3)
+    private HireFlowTcpServer tcpServer;
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final Thread shutdownHook;
@@ -243,10 +248,62 @@ public class ApplicationContext implements AutoCloseable {
             } catch (Exception ignored) {
             }
 
+            // 1. Stop TCP server and disconnect active clients before closing database resources
+            try {
+                if (tcpServer != null) {
+                    tcpServer.stop();
+                }
+            } catch (Exception ignored) {
+            }
+
+            // 2. Close database connection pool cleanly
             if (dataSourceProvider != null && !dataSourceProvider.isClosed()) {
                 dataSourceProvider.close();
             }
         }
+    }
+
+    /**
+     * Explicitly starts the HireFlow TCP Server bound to the given port using this ApplicationContext.
+     * Shares the existing repositories, services, and storage configuration.
+     *
+     * @param port port to listen on (0 for dynamic ephemeral port)
+     * @return running HireFlowTcpServer instance
+     * @throws IOException if server socket binding fails
+     */
+    public synchronized HireFlowTcpServer startTcpServer(int port) throws IOException {
+        if (isClosed()) {
+            throw new IllegalStateException("ApplicationContext is closed");
+        }
+        if (tcpServer != null && tcpServer.isRunning()) {
+            throw new IllegalStateException("TCP Server is already running on port " + tcpServer.getPort());
+        }
+        tcpServer = new HireFlowTcpServer(this, port);
+        tcpServer.start();
+        return tcpServer;
+    }
+
+    /**
+     * Stops the running TCP server without closing the ApplicationContext or HikariCP pool.
+     */
+    public synchronized void stopTcpServer() {
+        if (tcpServer != null) {
+            tcpServer.stop();
+        }
+    }
+
+    /**
+     * Returns the TCP server instance if one has been instantiated.
+     */
+    public synchronized Optional<HireFlowTcpServer> getTcpServer() {
+        return Optional.ofNullable(tcpServer);
+    }
+
+    /**
+     * Checks if the TCP server is currently running.
+     */
+    public synchronized boolean isTcpServerRunning() {
+        return tcpServer != null && tcpServer.isRunning();
     }
 
     public boolean isClosed() {
@@ -306,6 +363,10 @@ public class ApplicationContext implements AutoCloseable {
     }
 
     public RecruitmentDriveService getDriveService() {
+        return driveService;
+    }
+
+    public RecruitmentDriveService getRecruitmentDriveService() {
         return driveService;
     }
 
