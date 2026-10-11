@@ -316,6 +316,11 @@ public class DatabaseInfrastructureTest {
     @DisplayName("10. Flyway migration status inspection via FlywayMigrationService")
     void testFlywayMigrationStatus() {
         FlywayMigrationService migrationService = new FlywayMigrationService(dataSourceProvider.getDataSource());
+        assertFalse(migrationService.isBaselineOnMigrate(), "Default Flyway migration service must have baselineOnMigrate=false");
+
+        FlywayMigrationService customService = new FlywayMigrationService(dataSourceProvider.getDataSource(), true);
+        assertTrue(customService.isBaselineOnMigrate(), "Explicitly configured Flyway migration service must have baselineOnMigrate=true");
+
         MigrationInfo current = migrationService.getInfo().current();
 
         assertNotNull(current, "Current migration must not be null");
@@ -430,4 +435,37 @@ public class DatabaseInfrastructureTest {
             assertSame(conn, current, "getConnection inside transaction must return the ambient transactional proxy");
         });
     }
+
+    @Test
+    @Order(15)
+    @DisplayName("15. Active transaction connection restricts manual commit, rollback, setAutoCommit, and setTransactionIsolation")
+    void testActiveTransactionConnectionRestrictsManualDemarcation() {
+        transactionManager.runInTransactionWithoutResult(conn -> {
+            // 1. Calling commit() directly throws UnsupportedOperationException
+            UnsupportedOperationException commitEx = assertThrows(UnsupportedOperationException.class, conn::commit);
+            assertTrue(commitEx.getMessage().contains("commit() cannot be invoked directly"));
+
+            // 2. Calling rollback() directly throws UnsupportedOperationException
+            UnsupportedOperationException rbEx = assertThrows(UnsupportedOperationException.class, (org.junit.jupiter.api.function.Executable) conn::rollback);
+            assertTrue(rbEx.getMessage().contains("rollback() cannot be invoked directly"));
+
+            // 3. Calling setAutoCommit() throws UnsupportedOperationException
+            UnsupportedOperationException autoCommitEx = assertThrows(UnsupportedOperationException.class, () -> conn.setAutoCommit(true));
+            assertTrue(autoCommitEx.getMessage().contains("setAutoCommit() cannot be invoked"));
+
+            // 4. Calling setTransactionIsolation() throws UnsupportedOperationException
+            UnsupportedOperationException isoEx = assertThrows(UnsupportedOperationException.class,
+                    () -> conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE));
+            assertTrue(isoEx.getMessage().contains("setTransactionIsolation() cannot be invoked"));
+
+            // 5. Unwrapping to Connection.class returns the protected proxy, preventing demarcation bypass
+            try {
+                Connection unwrapped = conn.unwrap(Connection.class);
+                assertSame(conn, unwrapped);
+            } catch (SQLException ex) {
+                fail("Unwrap should succeed without exception", ex);
+            }
+        });
+    }
 }
+

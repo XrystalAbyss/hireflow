@@ -1,5 +1,9 @@
 package com.hireflow;
 
+import com.hireflow.context.ApplicationContext;
+import com.hireflow.db.DatabaseConfig;
+import com.hireflow.db.DatabaseMode;
+import com.hireflow.db.SQLExceptionTranslator;
 import com.hireflow.exception.DuplicateEntityException;
 import com.hireflow.exception.ValidationException;
 import com.hireflow.model.*;
@@ -16,7 +20,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * HireFlow Stage 1 Application Entry Point.
+ * HireFlow Stage 2 Application Entry Point.
+ * Selects IN_MEMORY or PostgreSQL (JDBC_DEV) storage via ApplicationContext at startup.
  * Launches the Swing Desktop Interface on graphical environments,
  * or runs the comprehensive console demonstration when run in headless mode or with --demo.
  */
@@ -40,6 +45,65 @@ public class Main {
             return;
         }
 
+        // Initialize ApplicationContext based on runtime configuration
+        DatabaseConfig config = DatabaseConfig.load();
+        ApplicationContext context;
+        try {
+            context = ApplicationContext.create(config);
+        } catch (Exception ex) {
+            if (config.getMode().isJdbc()) {
+                String cleanErr = SQLExceptionTranslator.sanitizeMessage(ex.getMessage());
+                int choice = JOptionPane.showConfirmDialog(
+                        null,
+                        "Could not connect to PostgreSQL database (" + config.getJdbcUrl() + ").\n\n" +
+                                "Error: " + cleanErr + "\n\n" +
+                                "Would you like to fall back to IN_MEMORY mode for this session?",
+                        "PostgreSQL Connection Error",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.ERROR_MESSAGE
+                );
+                if (choice == JOptionPane.YES_OPTION) {
+                    context = ApplicationContext.createInMemory();
+                } else {
+                    System.err.println("[HireFlow] Startup aborted by user due to database connection failure.");
+                    System.exit(1);
+                    return;
+                }
+            } else {
+                throw ex;
+            }
+        }
+
+        final ApplicationContext appContext = context;
+
+        // If in IN_MEMORY mode, seed standard demonstration dataset if empty
+        if (appContext.getMode().isInMemory()) {
+            SampleDataLoader seeder = new SampleDataLoader(
+                    appContext.getStudentRepository(),
+                    appContext.getCompanyRepository(),
+                    appContext.getDriveRepository(),
+                    appContext.getInterviewerRepository(),
+                    appContext.getRoomRepository()
+            );
+            if (seeder.seedIfEmpty()) {
+                try {
+                    Application a1 = appContext.getApplicationService().submitApplication("STU-101", "DRV-101");
+                    Application a2 = appContext.getApplicationService().submitApplication("STU-102", "DRV-101");
+                    Application a3 = appContext.getApplicationService().submitApplication("STU-104", "DRV-102");
+                    Application a4 = appContext.getApplicationService().submitApplication("STU-101", "DRV-102");
+                    Application a5 = appContext.getApplicationService().submitApplication("STU-109", "DRV-102");
+                    appContext.getApplicationService().submitApplication("STU-103", "DRV-102");
+
+                    appContext.getApplicationService().shortlistApplication(a1.getId());
+                    appContext.getApplicationService().shortlistApplication(a2.getId());
+                    appContext.getApplicationService().shortlistApplication(a3.getId());
+                    appContext.getApplicationService().shortlistApplication(a4.getId());
+                    appContext.getApplicationService().shortlistApplication(a5.getId());
+                } catch (Exception ignored) {
+                }
+            }
+        }
+
         // Launch Swing Desktop Interface on Event Dispatch Thread
         SwingUtilities.invokeLater(() -> {
             try {
@@ -48,36 +112,7 @@ public class Main {
                 // Fallback to default Swing Look and Feel
             }
 
-            // 1. Initialize Repositories
-            StudentRepository studentRepo = new InMemoryStudentRepository();
-            CompanyRepository companyRepo = new InMemoryCompanyRepository();
-            DriveRepository driveRepo = new InMemoryDriveRepository();
-            ApplicationRepository appRepo = new InMemoryApplicationRepository();
-            InterviewerRepository interviewerRepo = new InMemoryInterviewerRepository();
-            RoomRepository roomRepo = new InMemoryRoomRepository();
-            InterviewSessionRepository sessionRepo = new InMemoryInterviewSessionRepository();
-
-            // 2. Initialize Services
-            StudentService studentService = new StudentService(studentRepo, appRepo);
-            RecruitmentDriveService driveService = new RecruitmentDriveService(driveRepo, companyRepo, appRepo);
-            EligibilityService eligibilityService = new EligibilityService();
-            ApplicationService applicationService = new ApplicationService(appRepo, studentRepo, driveRepo, eligibilityService, sessionRepo);
-            SchedulingEngine scheduler = new GreedyScheduler();
-
-            // 3. Seed Standard Sample Data
-            MainFrame.seedSampleData(
-                    studentRepo, companyRepo, driveRepo,
-                    appRepo, interviewerRepo, roomRepo, sessionRepo,
-                    applicationService
-            );
-
-            // 4. Construct and display MainFrame
-            MainFrame frame = new MainFrame(
-                    studentRepo, companyRepo, driveRepo,
-                    appRepo, interviewerRepo, roomRepo, sessionRepo,
-                    studentService, driveService, eligibilityService,
-                    applicationService, scheduler
-            );
+            MainFrame frame = new MainFrame(appContext);
             frame.setVisible(true);
         });
     }

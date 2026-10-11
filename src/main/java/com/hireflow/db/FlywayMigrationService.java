@@ -15,16 +15,30 @@ public class FlywayMigrationService {
 
     private final DataSource dataSource;
     private final String[] locations;
+    private final boolean baselineOnMigrate;
 
     public FlywayMigrationService(DataSource dataSource) {
-        this(dataSource, "classpath:db/migration");
+        this(dataSource, false, "classpath:db/migration");
+    }
+
+    public FlywayMigrationService(DataSource dataSource, boolean baselineOnMigrate) {
+        this(dataSource, baselineOnMigrate, "classpath:db/migration");
     }
 
     public FlywayMigrationService(DataSource dataSource, String... locations) {
+        this(dataSource, false, locations);
+    }
+
+    public FlywayMigrationService(DataSource dataSource, boolean baselineOnMigrate, String... locations) {
         this.dataSource = Objects.requireNonNull(dataSource, "DataSource cannot be null");
+        this.baselineOnMigrate = baselineOnMigrate;
         this.locations = locations != null && locations.length > 0
                 ? locations
                 : new String[]{"classpath:db/migration"};
+    }
+
+    public boolean isBaselineOnMigrate() {
+        return baselineOnMigrate;
     }
 
     private Flyway buildFlyway(boolean allowClean) {
@@ -32,6 +46,7 @@ public class FlywayMigrationService {
                 .dataSource(dataSource)
                 .locations(locations)
                 .cleanDisabled(!allowClean)
+                .baselineOnMigrate(baselineOnMigrate)
                 .load();
     }
 

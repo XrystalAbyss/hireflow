@@ -192,10 +192,18 @@ public final class UIUtils {
     }
 
     public static void showError(Component parent, String message, String title) {
-        JOptionPane.showMessageDialog(parent, message, title, JOptionPane.ERROR_MESSAGE);
+        String sanitized = sanitizeDisplayMessage(message);
+        JOptionPane.showMessageDialog(parent, sanitized, title, JOptionPane.ERROR_MESSAGE);
     }
 
     public static void showWarning(Component parent, String message, String title) {
-        JOptionPane.showMessageDialog(parent, message, title, JOptionPane.WARNING_MESSAGE);
+        String sanitized = sanitizeDisplayMessage(message);
+        JOptionPane.showMessageDialog(parent, sanitized, title, JOptionPane.WARNING_MESSAGE);
+    }
+
+    public static String sanitizeDisplayMessage(String input) {
+        if (input == null) return "An unexpected error occurred.";
+        return input.replaceAll("(?i)(password|pwd|secret)=[^;\\s&]+", "$1=******")
+                .replaceAll("://([^:]+):([^@]+)@", "://$1:******@");
     }
 }

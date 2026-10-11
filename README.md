@@ -1,9 +1,9 @@
 # HireFlow - Campus Recruitment & Interview Scheduling System
 
-> **Stage 1 Status:** **COMPLETED & FROZEN — Core Java + Collections + Swing Prototype**  
-> **Release Checkpoint:** `v1.0.0-stage1`  
-> **Technology Stack:** **Java 21 LTS**, **Apache Maven**, **Standard Java Swing (Vanilla GUI)**, and **JUnit 5 Jupiter**.  
-> **Architecture:** In-Memory Thread-Safe Repository Layer (`ConcurrentHashMap`), Zero External Frameworks.
+> **Stage 2 Status:** **Stage 2B.6 COMPLETED — Repository Factory, Swing PostgreSQL Integration & Persistence Verification**  
+> **Release Checkpoint:** `v1.0.0-stage1` (Frozen Stage 1 Tag preserved) | Active Branch: `develop/stage2`  
+> **Technology Stack:** **Java 21 LTS**, **Apache Maven**, **Standard Java Swing (Vanilla GUI)**, **PostgreSQL 16**, **HikariCP**, **Flyway**, and **JUnit 5 Jupiter**.  
+> **Architecture:** Centralized `ApplicationContext` supporting dual modes: Stage 1 Pure In-Memory Collections and Stage 2B PostgreSQL ACID Storage with Flyway Migrations, Row-Level Locks, and GiST Temporal Exclusion Constraints.
 
 ---
 
@@ -11,24 +11,25 @@
 
 **HireFlow** is a desktop solution designed for university Training & Placement Cells (TPC) to automate and coordinate campus recruitment activities. The system manages candidate rosters, corporate recruitment drives, dynamic academic eligibility checks, and automated conflict-free interview scheduling.
 
-### Stage 1 Scope & Architecture Highlights:
-- **Zero Heavyweight Frameworks:** Implemented cleanly in core Java 21, Swing GUI, and JUnit 5 (no Spring Boot, external databases, OR-Tools, Docker, or web technologies in Stage 1).
-- **Clean Layered Architecture:** Strict separation between UI (`ui`), Business Logic (`service`, `scheduler`), Persistence Contracts (`repository`), and Domain Data (`model`).
-- **In-Memory Collection Store:** Thread-safe, repository-patterned in-memory storage using Java Collections (`ConcurrentHashMap`, `ArrayList`), ready for seamless Stage 2 JDBC database replacement.
-- **Algorithmic Scheduling Engine:** A greedy interval scheduling algorithm coupled with conflict detection preventing double-booking of students, interviewers, and interview rooms across 7 hard constraints.
-- **Responsive EDT Architecture:** Long-running scheduler computations run asynchronously via `SwingWorker`, ensuring the Swing Event Dispatch Thread (EDT) is never blocked.
-- **Full Inter-Screen Reactive Synchronization:** Modifications across any panel (registering a student, adding a drive, shortlisting an application, or publishing an interview schedule) immediately refresh tables and metrics across all screens.
-- **Real Service Invocations:** Every button, action, and filter directly invokes real business services and repositories. No decorative or mock buttons.
+### Architecture Highlights:
+- **Zero Heavyweight Frameworks:** Implemented cleanly in core Java 21, Swing GUI, HikariCP, Flyway, and JUnit 5 (zero Spring Boot, React, Hibernate, or OR-Tools).
+- **Dual Runtime Storage Modes via `ApplicationContext`:**
+  - **`IN_MEMORY`**: Pure Stage 1 thread-safe in-memory collections (`ConcurrentHashMap`). Works with zero database dependencies, even when PostgreSQL is completely offline.
+  - **`JDBC_DEV`**: Production-grade PostgreSQL storage connected to `hireflow_dev` via HikariCP, auto-migrated via Flyway, supporting persistent records across application restarts.
+  - **`JDBC_TEST`**: Isolated test mode strictly targeting `hireflow_test` with safety guards preventing accidental desktop execution.
+- **Transactional Schedule Publication:** High-concurrency schedule confirmation utilizing deterministic global lock ordering (`Applications` $\rightarrow$ `Rooms` $\rightarrow$ `Interviewers` $\rightarrow$ `Students`), conditional status transitions, and PostgreSQL GiST temporal exclusion constraints preventing double-booking.
+- **Non-Blocking Swing EDT:** Background processing for algorithmic greedy scheduling and schedule publication powered by `SwingWorker` so the desktop interface never freezes.
+- **Sanitized Diagnostics & Security:** Passwords and credentials are never logged, displayed in dialogs, or committed to version control.
 
 ---
 
 ## 2. Desktop Interface Screens
 
-HireFlow Stage 1 features a desktop interface with a persistent dark sidebar navigation, responsive card-based layout, and synchronized status indicators:
+HireFlow features a modern Swing desktop interface with a dark sidebar navigation, card-based layout, and synchronized real-time indicators:
 
 ```
 +---------------------------------------------------------------------------------------------------+
-|  HIREFLOW - Campus Placement System                                                               |
+|  HIREFLOW - Campus Placement System [PostgreSQL: hireflow_dev]                                    |
 +------------------+--------------------------------------------------------------------------------+
 |  [HF] HireFlow   |                                                                                |
 |                  |   ACTIVE SCREEN CONTENT (CardLayout)                                           |
@@ -39,191 +40,172 @@ HireFlow Stage 1 features a desktop interface with a persistent dark sidebar nav
 |  - Applications  |   - 4. Applications: Eligibility Evaluator, Submissions, Status Transitions   |
 |  - Scheduler     |   - 5. Interview Scheduler: Parameters, SwingWorker Greedy Engine, Timetable   |
 |                  |                                                                                |
-|  [Reset Demo]    |                                                                                |
+|  [Reset Demo]    |   (Disabled in PostgreSQL mode to protect persistent database records)         |
 +------------------+--------------------------------------------------------------------------------+
-| Status: System Ready | Students: 11 | Drives: 5 | Apps: 6 | Confirmed: 0 | Java 21 EDT Active     |
+| Status: System Ready | Students: 11 | Drives: 5 | Apps: 6 | Confirmed: 2 | Storage: PostgreSQL ...    |
 +---------------------------------------------------------------------------------------------------+
 ```
 
-### Screen 1: Operations Dashboard (`DashboardPanel`)
-- **Key Metrics Cards:** Live summary cards displaying Registered Students, Partner Companies, Active Drives, Applications, and Scheduled Sessions.
-- **Active Drives Table:** Dynamic table listing all ongoing recruitment drives with cutoffs and deadlines.
-- **Recent Applications Table:** Overview of candidate applications with current statuses.
-- **Quick Action Buttons:** Direct shortcuts to register students, post new drives, or launch the scheduling engine.
-
-### Screen 2: Student Management (`StudentPanel`)
-- **Search & Filter:** Real-time search across candidate names, institutional email, student ID, and branch.
-- **Candidate Roster Table:** Tabular view of student records with custom cell rendering and alternating row striping.
-- **Registration Form:** Form with client-side input validation (name format, email syntax, CGPA range `0.0`–`10.0`, graduation year, active enrollment).
-- **Edit Dialog:** Modal window to update existing candidate academic details.
-- **Delete Record:** Confirmation dialog to safely remove records while enforcing repository referential checks.
-
-### Screen 3: Companies & Recruitment Drives (`CompanyDrivePanel`)
-- **Tab 1 — Recruitment Drives:** Table of drives showing company, job title, cutoff CGPA, allowed branches, deadline, and active/expired status. Form to register new drives with company dropdown selection.
-- **Tab 2 — Partner Companies:** Corporate partner directory with company ID, name, and industry. Form to onboard new companies and remove obsolete corporate profiles.
-
-### Screen 4: Applications & Academic Eligibility (`ApplicationPanel`)
-- **Interactive Eligibility Evaluator:** Select any candidate and target drive, click **"Check Eligibility"**, and view detailed diagnostic pass/fail messages explaining criteria (CGPA cutoff, branch authorization, active enrollment, deadline compliance).
-- **Enforced Application Submission:** Submitting an application invokes the real `ApplicationService` which strictly rejects ineligible candidates and duplicate applications.
-- **Candidate Pipeline Lifecycle:** Action buttons to transition application statuses:
-  - `APPLIED` $\rightarrow$ `SHORTLISTED` $\rightarrow$ `SCHEDULED` $\rightarrow$ `SELECTED` / `REJECTED`.
-  - State machine validation prevents illegal jumps (e.g. scheduling an unshortlisted candidate).
-
-### Screen 5: Automated Interview Scheduling (`SchedulePanel`)
-- **Parameter Configuration:** Adjustable spinners for start hour (09:00), end hour (17:00), interview duration (mins), and buffer gap (mins).
-- **Non-Blocking Background Execution:** Uses `SwingWorker` so the UI remains fully responsive with an animated progress bar during schedule computation.
-- **Greedy Interval Engine:** Allocates candidate shortlists to qualified interviewers and available rooms while strictly honoring 7 hard constraints (no overlapping student slots, no overlapping interviewer sessions, no room collisions, availability window boundaries, non-zero durations, pre-existing appointment protection, shortlist prerequisite).
-- **Proposed Timetable Table:** Lists allocated sessions with session ID, application ID, student name, company, interviewer, room, and time slot.
-- **Unscheduled Conflicts Table:** Outlines unscheduled applications and reasons (e.g. not shortlisted, window exhausted).
-- **Publish & Confirm Action:** Commits proposed sessions into `InterviewSessionRepository` and updates application statuses to `SCHEDULED`.
+- **Screen 1 — Operations Dashboard (`DashboardPanel`):** Live metric cards, active recruitment drives, and recent applications.
+- **Screen 2 — Student Management (`StudentPanel`):** Searchable candidate roster, profile registration form, edit and delete dialogs.
+- **Screen 3 — Companies & Drives (`CompanyDrivePanel`):** Corporate partner directory and placement drive configuration with branch filters and cutoffs.
+- **Screen 4 — Applications & Eligibility (`ApplicationPanel`):** Candidate eligibility evaluator, application submissions, and pipeline status progression (`APPLIED` $\rightarrow$ `SHORTLISTED` $\rightarrow$ `SCHEDULED` $\rightarrow$ `SELECTED`).
+- **Screen 5 — Automated Interview Scheduler (`SchedulePanel`):** Configurable scheduling windows, non-blocking `SwingWorker` greedy allocation, timetable preview, conflict inspector, and transactional publication.
 
 ---
 
-## 3. Directory & Package Structure
+## 3. Storage Mode Configuration
 
-```
-hireflow/
-├── pom.xml                                   # Maven build file (Java 21, JUnit 5)
-├── README.md                                 # Project documentation and launch instructions
-├── docs/
-│   ├── requirements.md                       # Software requirements specification (SRS)
-│   ├── team-roles.md                         # Team responsibilities and assignment matrix
-│   ├── test-cases.md                         # Test cases for services and UI interactions
-│   ├── stage1-technical-report.md            # Comprehensive technical architecture & quality report
-│   └── cap3-demo-script.md                   # 10-Minute live presentation & defense script
-│
-├── src/
-│   ├── main/
-│   │   └── java/com/hireflow/
-│   │       ├── Main.java                     # Application bootstrap (GUI or CLI demo mode)
-│   │       ├── model/                        # Domain entities & enums
-│   │       │   ├── Student.java
-│   │       │   ├── Company.java
-│   │       │   ├── RecruitmentDrive.java
-│   │       │   ├── Application.java
-│   │       │   ├── ApplicationStatus.java
-│   │       │   ├── Interviewer.java
-│   │       │   ├── InterviewSession.java
-│   │       │   └── Room.java
-│   │       ├── repository/                   # Persistence interfaces & in-memory stores
-│   │       │   ├── CrudRepository.java
-│   │       │   ├── StudentRepository.java
-│   │       │   ├── CompanyRepository.java
-│   │       │   ├── DriveRepository.java
-│   │       │   ├── ApplicationRepository.java
-│   │       │   ├── InterviewerRepository.java
-│   │       │   ├── RoomRepository.java
-│   │       │   ├── InterviewSessionRepository.java
-│   │       │   ├── AbstractInMemoryRepository.java
-│   │       │   ├── InMemoryStudentRepository.java
-│   │       │   ├── InMemoryCompanyRepository.java
-│   │       │   ├── InMemoryDriveRepository.java
-│   │       │   ├── InMemoryApplicationRepository.java
-│   │       │   ├── InMemoryInterviewerRepository.java
-│   │       │   ├── InMemoryRoomRepository.java
-│   │       │   └── InMemoryInterviewSessionRepository.java
-│   │       ├── service/                      # Business logic services
-│   │       │   ├── StudentService.java
-│   │       │   ├── RecruitmentDriveService.java
-│   │       │   ├── EligibilityService.java
-│   │       │   ├── ApplicationService.java
-│   │       │   ├── SampleDataLoader.java
-│   │       │   └── event/                    # Domain event bus & observer pattern
-│   │       │       ├── HireFlowEvent.java
-│   │       │       ├── HireFlowEventListener.java
-│   │       │       └── HireFlowEventType.java
-│   │       ├── scheduler/                    # Scheduling algorithms & constraints
-│   │       │   ├── SchedulingEngine.java
-│   │       │   ├── GreedyScheduler.java
-│   │       │   ├── ConflictChecker.java
-│   │       │   ├── SchedulingRequest.java
-│   │       │   ├── SchedulingResult.java
-│   │       │   ├── TimeWindow.java
-│   │       │   └── UnscheduledApplication.java
-│   │       ├── exception/                    # Exception hierarchy
-│   │       │   ├── HireFlowException.java
-│   │       │   ├── EntityNotFoundException.java
-│   │       │   ├── DuplicateEntityException.java
-│   │       │   ├── ValidationException.java
-│   │       │   └── SchedulingConflictException.java
-│   │       └── ui/                           # Java Swing desktop user interface
-│   │           ├── UIUtils.java              # Styling, fonts, palettes, and components
-│   │           ├── MainFrame.java            # Main window, sidebar navigation, card switching
-│   │           ├── DashboardPanel.java       # Metric counters & overview tables
-│   │           ├── StudentPanel.java         # Candidate management & search
-│   │           ├── CompanyDrivePanel.java    # Company and recruitment drive management
-│   │           ├── ApplicationPanel.java     # Eligibility evaluator & applications table
-│   │           └── SchedulePanel.java        # Background greedy scheduler & timetables
-│   └── test/
-│       └── java/com/hireflow/                # Automated JUnit 5 unit & integration tests (91 Tests)
-│           ├── acceptance/
-│           │   └── Stage1AcceptanceRegressionTest.java
-│           ├── model/EntityValidationTest.java
-│           ├── repository/RepositoryOperationsTest.java
-│           ├── service/ServiceOperationsTest.java
-│           ├── scheduler/GreedySchedulerTest.java
-│           ├── ui/UITest.java
-│           └── Stage1WorkflowIntegrationTest.java
+HireFlow determines its persistence mode at startup following a strict configuration precedence:
+1. Environment variables
+2. JVM System Properties (`-Dhireflow.storage.mode=...`)
+3. Local configuration file (`hireflow-local.properties`, gitignored)
+4. Safe default (`IN_MEMORY`)
+
+### Available Modes:
+| Mode | Target | Description | Safe for Restart |
+| :--- | :--- | :--- | :--- |
+| `IN_MEMORY` | RAM | Pure Stage 1 collections; preloaded with demo data; no DB needed. | Transient |
+| `JDBC_DEV` | `hireflow_dev` | Connects to PostgreSQL, runs Flyway migrations, persists records. | **Persistent** |
+| `JDBC_TEST`| `hireflow_test`| Reserved for automated integration tests; rejected by GUI launcher. | Disposable |
+
+### Configuration Properties:
+| Property Name | Environment Variable | Default Value | Description |
+| :--- | :--- | :--- | :--- |
+| `hireflow.storage.mode` | `HIREFLOW_STORAGE_MODE` | `IN_MEMORY` | Storage engine (`IN_MEMORY`, `JDBC_DEV`, `JDBC_TEST`) |
+| `hireflow.db.url` | `HIREFLOW_DB_URL` | `jdbc:postgresql://localhost:5432/hireflow_dev` | PostgreSQL JDBC connection URL |
+| `hireflow.db.user` | `HIREFLOW_DB_USER` | `hireflow_user` | Database user account |
+| `hireflow.db.password` | `HIREFLOW_DB_PASSWORD` | *(empty)* | Database user password (never commit) |
+| `hireflow.db.pool.maximum-size` | `HIREFLOW_DB_POOL_MAX` | `10` | HikariCP maximum connection pool size |
+| `hireflow.db.pool.minimum-idle` | `HIREFLOW_DB_POOL_MIN` | `2` | HikariCP minimum idle connections |
+
+### Setting Up Local Development Credentials:
+Create a local file named `hireflow-local.properties` in the project root (this file is gitignored and will never be committed):
+```properties
+hireflow.storage.mode=JDBC_DEV
+hireflow.db.url=jdbc:postgresql://localhost:5432/hireflow_dev
+hireflow.db.user=hireflow_user
+hireflow.db.password=YOUR_LOCAL_PASSWORD_HERE
+hireflow.db.pool.maximum-size=10
+hireflow.db.pool.minimum-idle=2
 ```
 
 ---
 
-## 4. Prerequisites
+## 4. Starting PostgreSQL & Database Setup
 
-- **Java Development Kit (JDK):** Version **21** or later (`java --version`, `javac --version`)
-- **Apache Maven:** Version **3.8+** (`mvn --version`)
+HireFlow requires PostgreSQL 16 (or 15+) running locally or via network.
+
+### 1. Start PostgreSQL Service
+- **Windows:** Start the PostgreSQL service via Windows Services (`services.msc`) or PowerShell:
+  ```powershell
+  Start-Service postgresql-x64-16
+  ```
+- **Linux / macOS:**
+  ```bash
+  sudo systemctl start postgresql
+  ```
+
+### 2. Create Databases and Role (One-Time Setup)
+Using `psql`:
+```sql
+CREATE ROLE hireflow_user WITH LOGIN PASSWORD 'YOUR_PASSWORD';
+
+CREATE DATABASE hireflow_dev OWNER hireflow_user;
+CREATE DATABASE hireflow_test OWNER hireflow_user;
+
+\c hireflow_dev
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
+\c hireflow_test
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+```
+
+### 3. Automated Database Migrations
+Migrations are managed automatically by Flyway upon application launch or test execution. Migration scripts are located in `src/main/resources/db/migration/`:
+- `V1__init_schema.sql`: Tables, primary keys, foreign keys, btree_gist extension, check constraints, and GiST temporal exclusion constraints.
 
 ---
 
-## 5. How to Build & Run
+## 5. How to Build & Launch
+
+### Prerequisites:
+- **JDK 21** or later (`java --version`, `javac --version`)
+- **Apache Maven 3.8+** (`mvn --version`)
+- **PostgreSQL 16** (only required for `JDBC_DEV` and `JDBC_TEST` modes)
 
 ### Step 1: Compile the Project
 ```bash
 mvn clean compile
 ```
 
-### Step 2: Run Automated Unit & Integration Tests (91 Tests)
+### Step 2: Run Full Automated Test Suite (226 Tests)
 ```bash
 mvn test
 ```
-All 91 tests across the 7 test suites execute with 0 failures and 0 errors.
+Executes all unit, repository, service, scheduler, database concurrency, and persistence integration tests.
 
-### Step 3: Package into Executable JAR
+### Step 3: Package Executable JAR
 ```bash
 mvn clean package
 ```
-This builds `target/hireflow-1.0.0.jar` with all manifests and dependencies configured.
+Generates `target/hireflow-1.0.0.jar`.
 
-### Step 4: Launch the Desktop GUI Application
-Run the packaged JAR:
+### Step 4: Launch Desktop Application
+
+#### Launch in In-Memory Mode (Zero Database Setup):
 ```bash
-java -jar target/hireflow-1.0.0.jar
+java -Dhireflow.storage.mode=IN_MEMORY -jar target/hireflow-1.0.0.jar
 ```
-*(On systems with graphical displays, HireFlow opens the full desktop Swing interface directly.)*
 
-### Step 5: Optional — Run Console Demonstration Mode
-For headless environments, CI/CD runners, or command-line demonstrations:
+#### Launch in PostgreSQL Dev Mode:
+```bash
+java -Dhireflow.storage.mode=JDBC_DEV -jar target/hireflow-1.0.0.jar
+```
+*(Or simply configure `hireflow-local.properties` and run without JVM flags).*
+
+### Step 5: Headless / Console Demonstration Mode
+For headless environments or quick verification:
 ```bash
 java -jar target/hireflow-1.0.0.jar --demo
 ```
-This runs the complete step-by-step console test script:
-1. Lists drives and partner companies.
-2. Evaluates candidate academic eligibility.
-3. Submits an eligible application.
-4. Demonstrates rejection of ineligible applications (CGPA cutoff, branch mismatch, expired deadline).
-5. Demonstrates rejection of duplicate applications.
-6. Executes the greedy interview scheduling engine with conflict detection.
 
 ---
 
-## 6. Preloaded Sample Demonstration Data
+## 6. Verifying Persistence Across Restarts
 
-Upon launch, HireFlow automatically initializes with a sample dataset:
-- **11 Students:** Representing CSE, IT, ECE, MECH, and CIVIL with varying CGPAs (6.50 – 9.50) and active/inactive statuses.
-- **4 Companies:** Google Cloud, Microsoft, Goldman Sachs, Tata Motors.
-- **5 Recruitment Drives:** High-cutoff SDE drives, medium-cutoff cloud engineering drives, Core engineering drives, and an expired drive for validation testing.
-- **3 Technical Interviewers:** Designated per company (Dr. Sarah Chen, Marcus Vance, David Sterling).
-- **2 Interview Rooms:** Tech Lab A — Booth 1 & Booth 2.
-- **6 Applications:** 5 shortlisted applications ready for scheduling, and 1 non-shortlisted application to demonstrate prerequisite enforcement.
+To verify that records survive across separate application launches:
+1. Launch HireFlow in `JDBC_DEV` mode:
+   ```bash
+   java -Dhireflow.storage.mode=JDBC_DEV -jar target/hireflow-1.0.0.jar
+   ```
+2. Navigate to **Students** and register a new candidate (e.g. `STU-999`, "Persistent Student", `CSE`, `9.50`).
+3. Navigate to **Companies & Drives** and register a corporate partner (e.g. `CMP-999`, "Apex Cloud").
+4. Close the application window.
+5. Relaunch the application in `JDBC_DEV` mode:
+   ```bash
+   java -Dhireflow.storage.mode=JDBC_DEV -jar target/hireflow-1.0.0.jar
+   ```
+6. Check the **Students** and **Companies** panels: the records are immediately loaded from `hireflow_dev`.
 
-*You can restore this standard dataset at any time by clicking **"Reset Demo Data"** at the bottom of the sidebar.*
+---
+
+## 7. Troubleshooting Connection Failures
+
+If PostgreSQL is not running or credentials are incorrect when launching in `JDBC_DEV` mode:
+- **Clean Dialog Prompt:** HireFlow catches the connectivity error, strips any sensitive credentials, and presents an interactive prompt:
+  > *"Could not connect to PostgreSQL database. Would you like to fall back to IN_MEMORY mode for this session?"*
+- **Explicit In-Memory Fallback:** Selecting **Yes** boots the application in transient `IN_MEMORY` mode so users can continue working without interruption. Selecting **No** safely shuts down the application.
+- **Common Fixes:**
+  1. Confirm the PostgreSQL service is active (`netstat -ano | findstr 5432`).
+  2. Verify credentials in `hireflow-local.properties` match your database user.
+  3. Verify the `btree_gist` extension exists on `hireflow_dev` (`CREATE EXTENSION IF NOT EXISTS btree_gist;`).
+
+---
+
+## 8. Current Feature Limitations & Roadmap
+
+- **Stage 1 (Completed):** Pure In-Memory collections, 7 hard scheduling constraints, Swing desktop UI.
+- **Stage 2A & 2B (Completed):** PostgreSQL schema, 7 JDBC repositories, HikariCP connection pooling, Flyway migrations, ApplicationContext factory, transactional schedule publication with global locks, persistence verification.
+- **Stage 2C (Upcoming):** Multi-client TCP socket server, thread-safe request dispatching, remote protocol integration.
+- **Stage 3 (Future):** Comprehensive end-to-end integration and polish.

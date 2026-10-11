@@ -14,4 +14,8 @@ public interface InterviewSessionRepository extends CrudRepository<InterviewSess
     List<InterviewSession> findByInterviewerId(String interviewerId);
 
     List<InterviewSession> findByRoomId(String roomId);
+
+    default List<InterviewSession> findByStudentId(String studentId) {
+        return java.util.Collections.emptyList();
+    }
 }

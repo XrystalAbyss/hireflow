@@ -25,6 +25,7 @@ public final class DatabaseConfig {
     private final long idleTimeoutMs;
     private final long maxLifetimeMs;
     private final long leakDetectionThresholdMs;
+    private final boolean baselineOnMigrate;
 
     private DatabaseConfig(Builder builder) {
         this.mode = builder.mode;
@@ -37,6 +38,7 @@ public final class DatabaseConfig {
         this.idleTimeoutMs = builder.idleTimeoutMs;
         this.maxLifetimeMs = builder.maxLifetimeMs;
         this.leakDetectionThresholdMs = builder.leakDetectionThresholdMs;
+        this.baselineOnMigrate = builder.baselineOnMigrate;
     }
 
     public static Builder builder() {
@@ -96,6 +98,10 @@ public final class DatabaseConfig {
         long leakDetection = parseLong(resolveValue("HIREFLOW_DB_LEAK_DETECTION", "hireflow.db.pool.leak-detection-threshold-ms",
                 fileProps.getProperty("hireflow.db.pool.leak-detection-threshold-ms", "10000")), 10000L);
 
+        boolean baselineOnMigrate = Boolean.parseBoolean(resolveValue("HIREFLOW_FLYWAY_BASELINE_ON_MIGRATE",
+                "hireflow.db.flyway.baseline-on-migrate",
+                fileProps.getProperty("hireflow.db.flyway.baseline-on-migrate", "false")));
+
         return builder()
                 .mode(mode)
                 .jdbcUrl(url)
@@ -107,6 +113,7 @@ public final class DatabaseConfig {
                 .idleTimeoutMs(idleTimeout)
                 .maxLifetimeMs(maxLifetime)
                 .leakDetectionThresholdMs(leakDetection)
+                .baselineOnMigrate(baselineOnMigrate)
                 .build();
     }
 
@@ -194,6 +201,10 @@ public final class DatabaseConfig {
         return leakDetectionThresholdMs;
     }
 
+    public boolean isBaselineOnMigrate() {
+        return baselineOnMigrate;
+    }
+
     /**
      * Sanitized string representation guaranteeing passwords are masked.
      */
@@ -212,6 +223,7 @@ public final class DatabaseConfig {
                 ", idleTimeoutMs=" + idleTimeoutMs +
                 ", maxLifetimeMs=" + maxLifetimeMs +
                 ", leakDetectionThresholdMs=" + leakDetectionThresholdMs +
+                ", baselineOnMigrate=" + baselineOnMigrate +
                 '}';
     }
 
@@ -231,6 +243,7 @@ public final class DatabaseConfig {
         private long idleTimeoutMs = 30000;
         private long maxLifetimeMs = 600000;
         private long leakDetectionThresholdMs = 10000;
+        private boolean baselineOnMigrate = false;
 
         public Builder mode(DatabaseMode mode) {
             this.mode = mode != null ? mode : DatabaseMode.IN_MEMORY;
@@ -279,6 +292,11 @@ public final class DatabaseConfig {
 
         public Builder leakDetectionThresholdMs(long leakDetectionThresholdMs) {
             this.leakDetectionThresholdMs = leakDetectionThresholdMs;
+            return this;
+        }
+
+        public Builder baselineOnMigrate(boolean baselineOnMigrate) {
+            this.baselineOnMigrate = baselineOnMigrate;
             return this;
         }
 

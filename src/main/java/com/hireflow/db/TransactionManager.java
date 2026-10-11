@@ -28,6 +28,7 @@ import java.util.Random;
 public class TransactionManager {
 
     private static final ThreadLocal<Connection> CURRENT_CONNECTION = new ThreadLocal<>();
+    private static final ThreadLocal<Boolean> ROLLBACK_ONLY = ThreadLocal.withInitial(() -> Boolean.FALSE);
     private static final int DEFAULT_MAX_RETRIES = 3;
     private static final long INITIAL_BACKOFF_MS = 50;
 
@@ -130,6 +131,7 @@ public class TransactionManager {
         Throwable primaryException = null;
 
         try {
+            ROLLBACK_ONLY.set(Boolean.FALSE);
             physicalConn = dataSource.getConnection();
             physicalConn.setAutoCommit(false);
 
@@ -138,6 +140,12 @@ public class TransactionManager {
             CURRENT_CONNECTION.set(transactionalConn);
 
             T result = action.execute(transactionalConn);
+
+            if (isRollbackOnly()) {
+                throw new DatabaseException(
+                        "Transaction was marked as rollback-only due to an earlier failure inside the transaction."
+                );
+            }
 
             physicalConn.commit();
             return result;
@@ -154,6 +162,7 @@ public class TransactionManager {
             throw primaryException;
         } finally {
             CURRENT_CONNECTION.remove();
+            ROLLBACK_ONLY.remove();
             if (physicalConn != null) {
                 try {
                     if (!physicalConn.isClosed()) {
@@ -173,8 +182,37 @@ public class TransactionManager {
     }
 
     /**
+     * Flags the ambient transaction as rollback-only so it cannot be committed.
+     */
+    public static void setRollbackOnly() {
+        ROLLBACK_ONLY.set(Boolean.TRUE);
+    }
+
+    /**
+     * Checks whether the active transaction on the current thread is marked as rollback-only.
+     */
+    public static boolean isRollbackOnly() {
+        return Boolean.TRUE.equals(ROLLBACK_ONLY.get());
+    }
+
+    /**
+     * Ambient static accessor for current thread's active transaction connection.
+     */
+    public static Connection getCurrentConnection() {
+        return CURRENT_CONNECTION.get();
+    }
+
+    /**
+     * Checks whether an active transaction is bound to the current thread.
+     */
+    public static boolean isCurrentTransactionActive() {
+        return CURRENT_CONNECTION.get() != null;
+    }
+
+    /**
      * Creates a dynamic proxy for the active connection that intercepts close() calls
-     * to prevent premature pool return by repository code.
+     * to prevent premature pool return by repository code, and strictly restricts
+     * manual transaction demarcation (commit, rollback, setAutoCommit, setTransactionIsolation).
      */
     private Connection createCloseSuppressingProxy(Connection target) {
         return (Connection) Proxy.newProxyInstance(
@@ -185,6 +223,30 @@ public class TransactionManager {
                     if ("close".equals(methodName)) {
                         // Suppress close call during active transaction: TransactionManager owns lifecycle
                         return null;
+                    }
+                    if ("commit".equals(methodName)) {
+                        throw new UnsupportedOperationException(
+                                "commit() cannot be invoked directly on an active transaction connection. " +
+                                "Transaction demarcation is managed exclusively by TransactionManager."
+                        );
+                    }
+                    if ("rollback".equals(methodName)) {
+                        throw new UnsupportedOperationException(
+                                "rollback() cannot be invoked directly on an active transaction connection. " +
+                                "Transaction demarcation is managed exclusively by TransactionManager."
+                        );
+                    }
+                    if ("setAutoCommit".equals(methodName)) {
+                        throw new UnsupportedOperationException(
+                                "setAutoCommit() cannot be invoked on an active transaction connection. " +
+                                "Transaction demarcation is managed exclusively by TransactionManager."
+                        );
+                    }
+                    if ("setTransactionIsolation".equals(methodName)) {
+                        throw new UnsupportedOperationException(
+                                "setTransactionIsolation() cannot be invoked on an active transaction connection. " +
+                                "Transaction demarcation is managed exclusively by TransactionManager."
+                        );
                     }
                     if ("isClosed".equals(methodName)) {
                         return target.isClosed();
@@ -197,7 +259,7 @@ public class TransactionManager {
                     }
                     if ("unwrap".equals(methodName)) {
                         Class<?> iface = (Class<?>) args[0];
-                        if (iface.isInstance(proxy)) {
+                        if (iface.isInstance(proxy) || iface.equals(Connection.class)) {
                             return proxy;
                         }
                         if (iface.isInstance(target)) {
@@ -207,7 +269,8 @@ public class TransactionManager {
                     }
                     if ("isWrapperFor".equals(methodName)) {
                         Class<?> iface = (Class<?>) args[0];
-                        return iface.isInstance(proxy) || iface.isInstance(target) || target.isWrapperFor(iface);
+                        return iface.isInstance(proxy) || iface.equals(Connection.class)
+                                || iface.isInstance(target) || target.isWrapperFor(iface);
                     }
                     try {
                         return method.invoke(target, args);
