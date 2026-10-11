@@ -8,6 +8,12 @@ import com.hireflow.scheduler.GreedyScheduler;
 import com.hireflow.scheduler.SchedulingEngine;
 import com.hireflow.network.server.HireFlowTcpServer;
 import com.hireflow.service.*;
+import com.hireflow.web.security.AuthenticationService;
+import com.hireflow.web.security.BruteForceThrottler;
+import com.hireflow.web.security.InMemoryUserAccountRepository;
+import com.hireflow.web.security.JdbcUserAccountRepository;
+import com.hireflow.web.security.PasswordHasher;
+import com.hireflow.web.security.UserAccountRepository;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -47,14 +53,18 @@ public class ApplicationContext implements AutoCloseable {
     private final InterviewerRepository interviewerRepository;
     private final RoomRepository roomRepository;
     private final InterviewSessionRepository sessionRepository;
+    private final UserAccountRepository userAccountRepository;
 
     // Domain Services
     private final StudentService studentService;
+    private final CompanyService companyService;
     private final RecruitmentDriveService driveService;
     private final EligibilityService eligibilityService;
     private final ApplicationService applicationService;
     private final InterviewService interviewService;
     private final SchedulingEngine schedulingEngine;
+    private final PasswordHasher passwordHasher;
+    private final AuthenticationService authenticationService;
 
     // TCP Networking Subsystem (Stage 2C.3)
     private HireFlowTcpServer tcpServer;
@@ -87,6 +97,7 @@ public class ApplicationContext implements AutoCloseable {
         InterviewerRepository iRepo;
         RoomRepository rRepo;
         InterviewSessionRepository sessRepo;
+        UserAccountRepository uaRepo;
 
         if (this.mode == DatabaseMode.IN_MEMORY) {
             // 1. In-Memory Mode: pure in-memory stores, no HikariCP or database connection
@@ -96,7 +107,8 @@ public class ApplicationContext implements AutoCloseable {
             aRepo = new InMemoryApplicationRepository();
             iRepo = new InMemoryInterviewerRepository();
             rRepo = new InMemoryRoomRepository();
-            sessRepo = new InMemoryInterviewSessionRepository();
+            sessRepo = new InMemoryInterviewSessionRepository(aRepo);
+            uaRepo = new InMemoryUserAccountRepository();
         } else {
             // 2. JDBC Modes (JDBC_DEV or JDBC_TEST)
             try {
@@ -116,7 +128,7 @@ public class ApplicationContext implements AutoCloseable {
                 // Initialize TransactionManager
                 txMgr = new TransactionManager(dsProvider.getDataSource());
 
-                // Instantiate all seven JDBC repositories sharing the TransactionManager
+                // Instantiate all eight JDBC repositories sharing the TransactionManager
                 sRepo = new JdbcStudentRepository(txMgr);
                 cRepo = new JdbcCompanyRepository(txMgr);
                 dRepo = new JdbcDriveRepository(txMgr);
@@ -124,6 +136,7 @@ public class ApplicationContext implements AutoCloseable {
                 iRepo = new JdbcInterviewerRepository(txMgr);
                 rRepo = new JdbcRoomRepository(txMgr);
                 sessRepo = new JdbcInterviewSessionRepository(txMgr);
+                uaRepo = new JdbcUserAccountRepository(txMgr);
             } catch (Exception ex) {
                 // If anything fails during JDBC initialization, ensure cleanup
                 if (dsProvider != null && !dsProvider.isClosed()) {
@@ -150,10 +163,12 @@ public class ApplicationContext implements AutoCloseable {
         this.interviewerRepository = iRepo;
         this.roomRepository = rRepo;
         this.sessionRepository = sessRepo;
+        this.userAccountRepository = uaRepo;
 
         // 3. Construct and wire domain services uniformly
         this.eligibilityService = new EligibilityService();
         this.studentService = new StudentService(this.studentRepository, this.applicationRepository);
+        this.companyService = new CompanyService(this.companyRepository, this.driveRepository, this.interviewerRepository);
         this.driveService = new RecruitmentDriveService(this.driveRepository, this.companyRepository, this.applicationRepository);
         this.applicationService = new ApplicationService(
                 this.applicationRepository,
@@ -170,6 +185,13 @@ public class ApplicationContext implements AutoCloseable {
                 this.transactionManager
         );
         this.schedulingEngine = new GreedyScheduler();
+        this.passwordHasher = new PasswordHasher();
+        this.authenticationService = new AuthenticationService(
+                this.userAccountRepository,
+                this.passwordHasher,
+                this.studentRepository,
+                new BruteForceThrottler()
+        );
 
         // 4. Register JVM shutdown hook for clean resource disposal
         this.shutdownHook = new Thread(this::close, "HireFlow-Context-ShutdownHook");
@@ -362,6 +384,10 @@ public class ApplicationContext implements AutoCloseable {
         return studentService;
     }
 
+    public CompanyService getCompanyService() {
+        return companyService;
+    }
+
     public RecruitmentDriveService getDriveService() {
         return driveService;
     }
@@ -386,13 +412,25 @@ public class ApplicationContext implements AutoCloseable {
         return schedulingEngine;
     }
 
+    public UserAccountRepository getUserAccountRepository() {
+        return userAccountRepository;
+    }
+
+    public PasswordHasher getPasswordHasher() {
+        return passwordHasher;
+    }
+
+    public AuthenticationService getAuthenticationService() {
+        return authenticationService;
+    }
+
     /**
      * Returns sanitized diagnostic information suitable for UI status bars and logging.
      * Never exposes database credentials.
      */
     public String getSafeDiagnosticInfo() {
         if (mode.isInMemory()) {
-            return "Mode: IN_MEMORY | Repositories: 7 In-Memory | Active";
+            return "Mode: IN_MEMORY | Repositories: 8 In-Memory | Active";
         }
         String sanitizedUrl = SQLExceptionTranslator.sanitizeMessage(config.getJdbcUrl());
         return String.format("Mode: %s | Database: %s | Pool: %d max, %d min",

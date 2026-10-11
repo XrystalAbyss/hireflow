@@ -1,0 +1,117 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><c:out value="${pageTitle != null ? pageTitle : 'HireFlow - Campus Recruitment Portal'}"/></title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/hireflow-web.css">
+    <c:if test="${not empty csrfToken or not empty sessionScope['hireflow.csrfToken']}">
+        <meta name="csrf-token" content="<c:out value="${not empty csrfToken ? csrfToken : sessionScope['hireflow.csrfToken']}"/>">
+    </c:if>
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-container">
+            <a href="${pageContext.request.contextPath}/" class="brand" aria-label="HireFlow Home">
+                <div class="brand-badge">HF</div>
+                <div class="brand-info">
+                    <span class="brand-title">HireFlow</span>
+                    <span class="brand-subtitle">Training &amp; Placement Cell</span>
+                </div>
+            </a>
+            <nav aria-label="Main Navigation">
+                <ul class="nav-menu">
+                    <li>
+                        <a href="${pageContext.request.contextPath}/" class="nav-link ${activeNav == 'home' ? 'active' : ''}">Home</a>
+                    </li>
+                    <li>
+                        <a href="${pageContext.request.contextPath}/drives" class="nav-link ${activeNav == 'drives' ? 'active' : ''}">Recruitment Drives</a>
+                    </li>
+                    <li>
+                        <a href="${pageContext.request.contextPath}/about" class="nav-link ${activeNav == 'about' ? 'active' : ''}">About &amp; Policies</a>
+                    </li>
+                    <li>
+                        <a href="${pageContext.request.contextPath}/student/dashboard" class="nav-link nav-link-gate ${activeNav == 'student' || activeNav == 'dashboard' ? 'active' : ''}" title="Student candidate self-service portal">
+                            Student Portal
+                        </a>
+                    </li>
+                    <li>
+                        <a href="${pageContext.request.contextPath}/officer/dashboard" class="nav-link nav-link-gate ${activeNav == 'officer' ? 'active' : ''}" title="TPC placement officer administrative console">
+                            TPC Officer
+                        </a>
+                    </li>
+                    <c:choose>
+                        <c:when test="${not empty sessionScope['hireflow.user'] and sessionScope['hireflow.user'].student}">
+                            <li>
+                                <a href="${pageContext.request.contextPath}/student/profile" class="nav-link ${activeNav == 'profile' ? 'active' : ''}">Profile</a>
+                            </li>
+                            <li>
+                                <a href="${pageContext.request.contextPath}/student/drives" class="nav-link ${activeNav == 'drives' ? 'active' : ''}">Eligible Drives</a>
+                            </li>
+                            <li>
+                                <a href="${pageContext.request.contextPath}/student/applications" class="nav-link ${activeNav == 'applications' ? 'active' : ''}">Applications</a>
+                            </li>
+                            <li>
+                                <a href="${pageContext.request.contextPath}/student/interviews" class="nav-link ${activeNav == 'student-interviews' ? 'active' : ''}">Interviews</a>
+                            </li>
+                            <li>
+                                <a href="${pageContext.request.contextPath}/student/dashboard" class="nav-link" style="color: var(--primary); font-weight: 600;">
+                                    👤 <c:out value="${sessionScope['hireflow.user'].displayName}"/>
+                                </a>
+                            </li>
+                        </c:when>
+                        <c:when test="${not empty sessionScope['hireflow.user'] and sessionScope['hireflow.user'].placementOfficer}">
+                            <li>
+                                <a href="${pageContext.request.contextPath}/officer/companies" class="nav-link ${activeNav == 'companies' ? 'active' : ''}">Companies</a>
+                            </li>
+                            <li>
+                                <a href="${pageContext.request.contextPath}/officer/drives" class="nav-link ${activeNav == 'officer-drives' ? 'active' : ''}">Drives</a>
+                            </li>
+                            <li>
+                                <a href="${pageContext.request.contextPath}/officer/applications" class="nav-link ${activeNav == 'officer-apps' ? 'active' : ''}">Applicants</a>
+                            </li>
+                            <li>
+                                <a href="${pageContext.request.contextPath}/officer/interviewers" class="nav-link ${activeNav == 'officer-interviewers' ? 'active' : ''}">Interviewers</a>
+                            </li>
+                            <li>
+                                <a href="${pageContext.request.contextPath}/officer/rooms" class="nav-link ${activeNav == 'officer-rooms' ? 'active' : ''}">Rooms</a>
+                            </li>
+                            <li>
+                                <a href="${pageContext.request.contextPath}/officer/scheduling" class="nav-link ${activeNav == 'officer-scheduling' ? 'active' : ''}">Scheduling</a>
+                            </li>
+                            <li>
+                                <a href="${pageContext.request.contextPath}/officer/scheduling/published" class="nav-link ${activeNav == 'officer-timetable' ? 'active' : ''}">Timetable</a>
+                            </li>
+                            <li>
+                                <a href="${pageContext.request.contextPath}/officer/dashboard" class="nav-link" style="color: var(--primary); font-weight: 600;">
+                                    👤 <c:out value="${sessionScope['hireflow.user'].displayName}"/>
+                                </a>
+                            </li>
+                        </c:when>
+                        <c:when test="${not empty sessionScope['hireflow.user']}">
+                            <li>
+                                <a href="${pageContext.request.contextPath}/officer/dashboard" class="nav-link" style="color: var(--primary); font-weight: 600;">
+                                    👤 <c:out value="${sessionScope['hireflow.user'].displayName}"/>
+                                </a>
+                            </li>
+                        </c:when>
+                        <c:otherwise>
+                            <li>
+                                <a href="${pageContext.request.contextPath}/login" class="nav-link ${activeNav == 'login' ? 'active' : ''}" style="color: var(--primary); font-weight: 600;">
+                                    Sign In
+                                </a>
+                            </li>
+                        </c:otherwise>
+                    </c:choose>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    <main class="main-content">
+        <%@ include file="/WEB-INF/views/common/flash.jspf" %>
+        <%@ include file="/WEB-INF/views/common/breadcrumbs.jspf" %>

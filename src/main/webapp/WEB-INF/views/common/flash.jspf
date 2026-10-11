@@ -1,0 +1,23 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%-- Reusable Flash and Notification Message Banner --%>
+<c:set var="resolvedFlashMsg" value="${not empty flashMessage ? flashMessage : (not empty sessionScope.flash_success ? sessionScope.flash_success : (not empty sessionScope.flash_error ? sessionScope.flash_error : (not empty flash_success ? flash_success : flash_error)))}" />
+<c:set var="resolvedFlashType" value="${not empty flashType ? flashType : (not empty sessionScope.flash_success or not empty flash_success ? 'success' : (not empty sessionScope.flash_error or not empty flash_error ? 'danger' : 'info'))}" />
+
+<c:if test="${not empty resolvedFlashMsg}">
+    <div class="alert alert-${resolvedFlashType}" role="alert">
+        <span class="alert-icon">
+            <c:choose>
+                <c:when test="${resolvedFlashType == 'success'}">✓</c:when>
+                <c:when test="${resolvedFlashType == 'warning'}">⚠</c:when>
+                <c:when test="${resolvedFlashType == 'danger'}">✕</c:when>
+                <c:otherwise>ℹ</c:otherwise>
+            </c:choose>
+        </span>
+        <div class="alert-content">
+            <c:out value="${resolvedFlashMsg}" />
+        </div>
+    </div>
+    <c:remove var="flash_success" scope="session"/>
+    <c:remove var="flash_error" scope="session"/>
+</c:if>

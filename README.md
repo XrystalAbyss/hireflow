@@ -1,10 +1,10 @@
 # HireFlow - Campus Recruitment & Interview Scheduling System
 
-> **Stage 2 Status:** **Stage 2 COMPLETED & FROZEN (CAP-5 Complete) — PostgreSQL Persistence, Multi-Threaded TCP Sockets & Swing Dashboard Integration**  
-> **Release Checkpoint:** `v1.0.0-stage1` (Frozen Stage 1 Tag preserved at `66826c1`) | Active Branch: `develop/stage2`  
-> **Technology Stack:** **Java 21 LTS**, **Apache Maven**, **Standard Java Swing (Vanilla GUI)**, **Java Socket Networking (`java.net.Socket`, `ServerSocket`)**, **PostgreSQL 16**, **HikariCP**, **Flyway**, and **JUnit 5 Jupiter**.  
-> **Architecture:** Centralized `ApplicationContext` supporting dual modes (`IN_MEMORY`, `JDBC_DEV`), transactional schedule publication, an integrated Swing networking dashboard (`NetworkingPanel`), and an explicit-lifecycle TCP server with bounded backpressure, active heartbeat acknowledgements, and post-commit event broadcasting.  
-> **Automated Verification:** **285 Passing Tests** (0 Failures, 0 Errors, 0 Skips across 11 test suites via `mvn clean verify`).
+> **Stage 3 Status:** **Stage 3G COMPLETE (Full CAP-6 End-to-End Acceptance, Security Audit, Documentation & Release Preparation)**  
+> **Release Checkpoints:** `v1.0.0-stage1` (`66826c1`) | `v2.0.0-cap5` (`559ed7b`) | Active Branch: `develop/stage3`  
+> **Technology Stack:** **Java 21 LTS**, **Apache Maven**, **Jakarta Servlet API 6.0**, **Jakarta Server Pages (JSP) 3.1**, **JSTL 3.0**, **Apache Tomcat 10.1.x**, **BCrypt** (`at.favre.lib:bcrypt:0.10.2`), **PostgreSQL 16**, **HikariCP**, **Flyway**, **Standard Java Swing (Vanilla GUI)**, and **JUnit 5 Jupiter**.  
+> **Architecture:** Centralized `ApplicationContext` supporting dual modes (`IN_MEMORY`, `JDBC_DEV`), Jakarta EE MVC Web Portal (`/`, `/drives`, `/about`, `/health`, `/login`, `/logout`), persistent database authentication (`user_accounts`), session ID rotation, CSRF token validation & rotation, brute-force throttling, role-based authorization filters (`STUDENT`, `PLACEMENT_OFFICER`, `ADMINISTRATOR`), immediate disabled-account revocation, student self-service portal (`/student/profile`, `/student/drives`, `/student/applications`, `/student/interviews`), placement officer recruitment management portal (`/officer/dashboard`, `/officer/companies`, `/officer/drives`, `/officer/applications`, `/officer/interviewers`, `/officer/rooms`, `/officer/scheduling`, `/officer/scheduling/publish`, `/officer/scheduling/published`), Flyway V3 drive closure semantics preserving original deadlines, interview resource management with referential integrity guards, cryptographic preview tokens (128-bit CSPRNG, 15-minute TTL, multi-tab isolation, one-time anti-replay consumption), Stage 2 transactional interview publication with deterministic global resource lock ordering and PostgreSQL GiST exclusion constraints, candidate-isolated student interview schedule visibility, verified 20-step end-to-end browser & database lifecycle, unified WAR and desktop JAR packaging, an integrated Swing networking dashboard (`NetworkingPanel`), and an explicit-lifecycle TCP server.  
+> **Automated Verification:** **495 Passing Tests** (0 Failures, 0 Errors, 0 Skips across 40 test classes / 73 test suites via `mvn clean verify`).
 
 ---
 
@@ -127,7 +127,7 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;
 
 ### 3. Automated Database Migrations
 Migrations are managed automatically by Flyway upon application launch or test execution. Migration scripts are located in `src/main/resources/db/migration/`:
-- `V1__init_schema.sql`: Tables, primary keys, foreign keys, btree_gist extension, check constraints, and GiST temporal exclusion constraints.
+- `V1__initial_schema.sql`: Tables, primary keys, foreign keys, btree_gist extension, check constraints, and GiST temporal exclusion constraints.
 
 ---
 
@@ -323,6 +323,90 @@ HireFlow's automated test suite has expanded monotonically across every developm
 | **Stage 2C.1** | Java TCP Server (`HireFlowTcpServer`), framing reader, multiplexed client | **248** (+22) | 0 / 0 / 0 |
 | **Stage 2C.2** | Multi-client broadcasting, bounded backpressure (50-queue), candidate privacy filter | **266** (+18) | 0 / 0 / 0 |
 | **Stage 2C.3** | Swing Networking Dashboard (`NetworkingPanel`), lifecycle ownership, heartbeat safety | **283** (+17) | 0 / 0 / 0 |
-| **Stage 2C.4 (Current Freeze)** | Full Swing GUI acceptance suite, end-to-end multi-client broadcast & DB restart | **285** (+2) | 0 / 0 / 0 |
+| **Stage 2C.4 (CAP-5 Frozen)** | Full Swing GUI acceptance suite, end-to-end multi-client broadcast & DB restart | **285** (+2) | 0 / 0 / 0 |
+| **Stage 3A** | Jakarta Servlets 6.0, JSP 3.1, Tomcat 10.1 WAR, MVC controllers, public drives catalog | **309** (+24) | 0 / 0 / 0 |
+| **Stage 3B** | Reusable JSP layout, public drive search/filter/sort, deny-by-default protected portal boundaries (`/student/*`, `/officer/*`), `UserPrincipal`/`UserRole`, container error handling | **331** (+22) | 0 / 0 / 0 |
+| **Stage 3C** | Database-backed auth (Flyway V2 `user_accounts`), pure Java BCrypt hashing, Login (`/login`) & Logout (`/logout`), CSRF protection, session ID rotation, BruteForceThrottler, Student & Officer dashboards, Tomcat integration | **375** (+44) | 0 / 0 / 0 |
+| **Stage 3D** | Student self-service portal, academic eligibility evaluation, online application submission, application status tracking | **410** (+35) | 0 / 0 / 0 |
+| **Stage 3E** | Corporate partner directory (`/officer/companies`), drive management with closure (`/officer/drives`), application review and shortlisting (`/officer/applications`) | **447** (+37) | 0 / 0 / 0 |
+| **Stage 3F.1** | Flyway V3 non-destructive drive closure, interviewer management (`/officer/interviewers`), room management (`/officer/rooms`), web scheduling setup & advisory preview (`/officer/scheduling`) | **475** (+28) | 0 / 0 / 0 |
+| **Stage 3F.2** | Cryptographic preview state (128-bit CSPRNG, 15-min TTL, multi-tab isolation, one-time anti-replay), transactional interview publication (`POST /officer/scheduling/publish`), Stage 2 lock ordering & GiST protection, confirmed timetable (`GET /officer/scheduling/published`), candidate interview schedule visibility (`GET /student/interviews`) | **494** (+19) | 0 / 0 / 0 |
+| **Stage 3G (CAP-6 Accepted)** | 20-step end-to-end browser & PostgreSQL acceptance workflow (`TomcatPostgresE2EWorkflowTest`), scheduling fault-recovery verification, security & privacy audit, release readiness | **495** (+1) | 0 / 0 / 0 |
 
-**Current Test Suite Status:** **285 passed, 0 failed, 0 error, 0 skipped** across all 11 unit and integration test suites.
+**Current Test Suite Status:** **495 passed, 0 failed, 0 error, 0 skipped** across all 40 test classes / 73 test suites via `mvn clean verify`.
+
+---
+
+## 10. Jakarta EE Web Portal & Apache Tomcat 10.1 Deployment (Stage 3G / CAP-6 Final Acceptance)
+
+HireFlow Stage 3 delivers the enterprise placement portal, student self-service pipeline, officer recruitment administration, and secure transactional interview timetable publication:
+
+### Architectural Separation (MVC & Security):
+- **Model:** Core domain entities, Flyway V2 `user_accounts` table, `UserAccount` entity, `UserAccountRepository` (JDBC and In-Memory), `PasswordHasher` (BCrypt cost 10), `AuthenticationService`, `StudentDriveViewItem`, `StudentApplicationViewItem`, `SchedulingPreviewState`, `PublicationSummaryState`, and `ConfirmedInterviewViewItem`.
+- **View:** Modular JSP fragments (`WEB-INF/views/common/header.jspf`, `footer.jspf`, `breadcrumbs.jspf`, `flash.jspf`), public views (`home.jsp`, `drives.jsp`, `about.jsp`), secure authentication view (`login.jsp` with CSRF protection), student portal views (`student/dashboard.jsp`, `student/profile.jsp`, `student/drives.jsp`, `student/applications.jsp`, `student/interviews.jsp`), officer portal views (`officer/dashboard.jsp`, `officer/companies.jsp`, `officer/drives.jsp`, `officer/applications.jsp`, `officer/interviewers.jsp`, `officer/rooms.jsp`, `officer/scheduling-setup.jsp`, `officer/scheduling-preview.jsp`, `officer/published-schedule.jsp`), and sanitized error views (`auth-gate.jsp`, `error.jsp`).
+- **Controller:** Standard Jakarta `HttpServlet` classes (`HomeController`, `DriveController`, `AboutController`, `HealthController`, `LoginController`, `LogoutController`, `StudentDashboardController`, `StudentProfileController`, `StudentDriveController`, `StudentApplicationController`, `StudentInterviewController`, `OfficerDashboardController`, `OfficerCompanyController`, `OfficerDriveController`, `OfficerApplicationController`, `OfficerInterviewerController`, `OfficerRoomController`, `OfficerSchedulingController`).
+- **Role-Based Authorization & IDOR Defense:** `PortalAuthorizationFilter` intercepts `/student/*`, `/officer/*`, and `/admin/*`. Verifies server-side `UserPrincipal` identity exclusively from `HttpSession`, strictly ignoring query parameter or body tampering. Enforces immediate session invalidation on disabled accounts and applies anti-caching headers (`Cache-Control: no-store, no-cache`) across all private endpoints.
+- **Session Lifecycle & CSRF Hardening:** 30-minute session timeout, session ID rotation upon login via `req.changeSessionId()` alongside synchronized `CsrfTokenManager.rotateToken(session)`, `HttpOnly` session cookie flag, context-scoped cookie clearance on logout, remote HTTPS enforcement via `SecurityHeadersFilter`, and cryptographically random CSRF tokens (`_csrf`) required on all state-changing requests (`POST /login`, `POST /logout`, `POST /student/applications`, `POST /officer/*`).
+- **Abuse Defense:** Bounded in-memory sliding window rate limiter (`BruteForceThrottler`) mitigating brute-force password guessing attacks without leaking account existence.
+- **Preview State Lifecycle & Anti-Replay:** Server-side `SchedulingPreviewState` bound to officer username and HTTP session, identified by a 128-bit cryptographically secure token (`SecureRandom`), bounded to a 15-minute time-to-live (`expiresAt`), managed in an LRU session map for multi-tab isolation, and atomically consumed upon publication to prevent replay attacks.
+- **Transactional Publication Semantics:** Publication (`POST /officer/scheduling/publish`) strictly re-validates shortlisting status, interviewer/room availability, and buffer rules. Reuses Stage 2 per-session transactions with deterministic lock ordering (`Applications` $\rightarrow$ `Rooms` $\rightarrow$ `Interviewers` $\rightarrow$ `Students`), conditional status progression (`SHORTLISTED` $\rightarrow$ `SCHEDULED`), and PostgreSQL GiST physical exclusion constraints. Distinguishes published, duplicate skipped, conflict rejected, and infrastructure failure outcomes.
+- **Candidate Privacy Boundary:** Student interview view (`GET /student/interviews`) derives candidate identity exclusively from the authenticated session principal, queries only confirmed sessions linked to the student's applications, withholds internal interviewer notes and personal contact info, and serves strictly with anti-caching headers.
+- **Lifecycle:** `WebContextListener` (`ServletContextListener`) initializes `ApplicationContext` upon Tomcat startup, runs Flyway migrations, wires `AuthenticationService` and repositories to `ServletContext`, and cleanly closes resources on shutdown.
+
+---
+
+### Building and Deploying to Apache Tomcat:
+
+#### 1. Build the Dual Artifacts
+```bash
+mvn clean verify
+```
+This builds both:
+- `target/hireflow-1.0.0.war` — deployable Jakarta EE web application archive (~8.5 MB).
+- `target/hireflow-1.0.0-desktop.jar` — standalone executable desktop Swing application (~365 KB).
+
+#### 2. Deploy to Apache Tomcat 10.1
+1. Ensure Apache Tomcat 10.1.x is installed (requires Java 17+ / Java 21).
+2. Copy the generated WAR file into Tomcat's `webapps` folder:
+   ```bash
+   cp target/hireflow-1.0.0.war $CATALINA_HOME/webapps/hireflow.war
+   ```
+3. Start Tomcat:
+   ```bash
+   # Linux / macOS:
+   $CATALINA_HOME/bin/startup.sh
+
+   # Windows:
+   %CATALINA_HOME%\bin\startup.bat
+   ```
+4. Configure PostgreSQL access: Ensure PostgreSQL is running on `localhost:5432` with database `hireflow_dev`. If custom credentials are required, configure via environment variable `HIREFLOW_DB_PASSWORD` or place `hireflow-local.properties` in Tomcat's working directory.
+
+#### 3. Test Endpoints in Browser
+- **Portal Landing Page:** `http://localhost:8080/hireflow/` or `http://localhost:8080/hireflow/home`
+- **Public Recruitment Drives Catalog:** `http://localhost:8080/hireflow/drives`
+- **Catalog Search & Filtering:** `http://localhost:8080/hireflow/drives?q=Engineer&branch=CSE&status=ACTIVE&sort=deadline`
+- **About & Placement Policies:** `http://localhost:8080/hireflow/about`
+- **Login Page:** `http://localhost:8080/hireflow/login` (CSRF-protected login form)
+- **Protected Student Dashboard:** `http://localhost:8080/hireflow/student/dashboard` (requires `STUDENT` role)
+- **Student Academic Profile:** `http://localhost:8080/hireflow/student/profile` (read-only academic profile)
+- **Student Recruitment Drives:** `http://localhost:8080/hireflow/student/drives` (evaluated eligibility & online apply forms)
+- **Student Application Statuses:** `http://localhost:8080/hireflow/student/applications` (candidate pipeline tracking)
+- **Student Confirmed Interview Schedule:** `http://localhost:8080/hireflow/student/interviews` (candidate-isolated confirmed appointments)
+- **Protected Officer Dashboard:** `http://localhost:8080/hireflow/officer/dashboard` (requires `PLACEMENT_OFFICER` or `ADMINISTRATOR` role)
+- **Corporate Partners Directory & Management:** `http://localhost:8080/hireflow/officer/companies` (view, register, edit companies)
+- **Recruitment Drive Management & Closure:** `http://localhost:8080/hireflow/officer/drives` (view, create, edit, close drives)
+- **Applicant Review & Candidate Shortlisting:** `http://localhost:8080/hireflow/officer/applications` (search, filter, evaluate eligibility, shortlist candidates)
+- **Corporate Interviewers Management:** `http://localhost:8080/hireflow/officer/interviewers` (view, register, edit, delete interviewers with referential integrity guard)
+- **Interview Venues & Rooms Management:** `http://localhost:8080/hireflow/officer/rooms` (view, create, edit, delete venues with capacity validation and referential integrity guard)
+- **Automated Scheduling Setup & Advisory Preview:** `http://localhost:8080/hireflow/officer/scheduling` (configure parameters, inspect qualified candidate pools, generate advisory timetable preview)
+- **Transactional Timetable Publication:** `POST http://localhost:8080/hireflow/officer/scheduling/publish` (CSRF-protected, one-time preview token, atomic commit)
+- **Confirmed Interview Timetable:** `http://localhost:8080/hireflow/officer/scheduling/published` (confirmed schedule view, bounded drive & date filtering)
+- **System Diagnostics API (JSON):** `http://localhost:8080/hireflow/health`
+- **Error Page Test:** `http://localhost:8080/hireflow/invalid-route` (returns sanitized 404 page)
+
+#### 4. Running the Desktop Swing UI Concurrently
+The desktop application can still be launched directly:
+```bash
+java -jar target/hireflow-1.0.0-desktop.jar
+```
+Both desktop and web interfaces can run against the same PostgreSQL database concurrently without conflict.

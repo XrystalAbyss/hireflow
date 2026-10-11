@@ -25,7 +25,7 @@ import java.util.*;
 public class JdbcDriveRepository extends AbstractJdbcRepository<RecruitmentDrive, String> implements DriveRepository {
 
     private static final String BASE_SELECT_SQL =
-            "SELECT rd.id, rd.company_id, rd.job_title, rd.minimum_cgpa, rd.application_deadline, " +
+            "SELECT rd.id, rd.company_id, rd.job_title, rd.minimum_cgpa, rd.application_deadline, rd.is_closed, " +
             "COALESCE(array_agg(deb.branch) FILTER (WHERE deb.branch IS NOT NULL), ARRAY[]::varchar[]) AS branches " +
             "FROM recruitment_drives rd " +
             "LEFT JOIN drive_eligible_branches deb ON rd.id = deb.drive_id ";
@@ -73,7 +73,7 @@ public class JdbcDriveRepository extends AbstractJdbcRepository<RecruitmentDrive
         }
         String sql = BASE_SELECT_SQL +
                 "WHERE rd.id = ? " +
-                "GROUP BY rd.id, rd.company_id, rd.job_title, rd.minimum_cgpa, rd.application_deadline";
+                "GROUP BY rd.id, rd.company_id, rd.job_title, rd.minimum_cgpa, rd.application_deadline, rd.is_closed";
 
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -92,7 +92,7 @@ public class JdbcDriveRepository extends AbstractJdbcRepository<RecruitmentDrive
     @Override
     public List<RecruitmentDrive> findAll() {
         String sql = BASE_SELECT_SQL +
-                "GROUP BY rd.id, rd.company_id, rd.job_title, rd.minimum_cgpa, rd.application_deadline " +
+                "GROUP BY rd.id, rd.company_id, rd.job_title, rd.minimum_cgpa, rd.application_deadline, rd.is_closed " +
                 "ORDER BY rd.id ASC";
         List<RecruitmentDrive> list = new ArrayList<>();
 
@@ -171,7 +171,7 @@ public class JdbcDriveRepository extends AbstractJdbcRepository<RecruitmentDrive
         }
         String sql = BASE_SELECT_SQL +
                 "WHERE UPPER(rd.company_id) = UPPER(?) " +
-                "GROUP BY rd.id, rd.company_id, rd.job_title, rd.minimum_cgpa, rd.application_deadline " +
+                "GROUP BY rd.id, rd.company_id, rd.job_title, rd.minimum_cgpa, rd.application_deadline, rd.is_closed " +
                 "ORDER BY rd.id ASC";
         List<RecruitmentDrive> list = new ArrayList<>();
 
@@ -193,8 +193,8 @@ public class JdbcDriveRepository extends AbstractJdbcRepository<RecruitmentDrive
     public List<RecruitmentDrive> findActiveDrives(LocalDate asOfDate) {
         LocalDate date = asOfDate != null ? asOfDate : LocalDate.now();
         String sql = BASE_SELECT_SQL +
-                "WHERE rd.application_deadline >= ? " +
-                "GROUP BY rd.id, rd.company_id, rd.job_title, rd.minimum_cgpa, rd.application_deadline " +
+                "WHERE rd.is_closed = FALSE AND rd.application_deadline >= ? " +
+                "GROUP BY rd.id, rd.company_id, rd.job_title, rd.minimum_cgpa, rd.application_deadline, rd.is_closed " +
                 "ORDER BY rd.application_deadline ASC, rd.id ASC";
         List<RecruitmentDrive> list = new ArrayList<>();
 
@@ -214,8 +214,8 @@ public class JdbcDriveRepository extends AbstractJdbcRepository<RecruitmentDrive
 
     private RecruitmentDrive insertDriveWithBranches(Connection conn, RecruitmentDrive drive) throws SQLException {
         String insertDriveSql = "INSERT INTO recruitment_drives (id, company_id, job_title, minimum_cgpa, " +
-                "application_deadline, created_at, updated_at) " +
-                "VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
+                "application_deadline, is_closed, created_at, updated_at) " +
+                "VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
 
         try (PreparedStatement psDrive = conn.prepareStatement(insertDriveSql)) {
             psDrive.setString(1, drive.getId());
@@ -223,6 +223,7 @@ public class JdbcDriveRepository extends AbstractJdbcRepository<RecruitmentDrive
             psDrive.setString(3, drive.getJobTitle());
             psDrive.setBigDecimal(4, BigDecimal.valueOf(drive.getMinimumCgpa()));
             psDrive.setDate(5, Date.valueOf(drive.getApplicationDeadline()));
+            psDrive.setBoolean(6, drive.isClosed());
             psDrive.executeUpdate();
         }
 
@@ -232,7 +233,7 @@ public class JdbcDriveRepository extends AbstractJdbcRepository<RecruitmentDrive
 
     private RecruitmentDrive updateDriveWithBranches(Connection conn, RecruitmentDrive drive) throws SQLException {
         String updateDriveSql = "UPDATE recruitment_drives SET company_id = ?, job_title = ?, minimum_cgpa = ?, " +
-                "application_deadline = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+                "application_deadline = ?, is_closed = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
 
         int affected;
         try (PreparedStatement psDrive = conn.prepareStatement(updateDriveSql)) {
@@ -240,7 +241,8 @@ public class JdbcDriveRepository extends AbstractJdbcRepository<RecruitmentDrive
             psDrive.setString(2, drive.getJobTitle());
             psDrive.setBigDecimal(3, BigDecimal.valueOf(drive.getMinimumCgpa()));
             psDrive.setDate(4, Date.valueOf(drive.getApplicationDeadline()));
-            psDrive.setString(5, drive.getId());
+            psDrive.setBoolean(5, drive.isClosed());
+            psDrive.setString(6, drive.getId());
             affected = psDrive.executeUpdate();
         }
 
@@ -295,6 +297,7 @@ public class JdbcDriveRepository extends AbstractJdbcRepository<RecruitmentDrive
         double minCgpa = rawCgpa != null ? rawCgpa.doubleValue() : 0.0;
         Date sqlDate = rs.getDate("application_deadline");
         LocalDate deadline = sqlDate != null ? sqlDate.toLocalDate() : LocalDate.now();
+        boolean isClosed = rs.getBoolean("is_closed");
 
         Set<String> branches = new HashSet<>();
         Array branchArray = rs.getArray("branches");
@@ -309,6 +312,6 @@ public class JdbcDriveRepository extends AbstractJdbcRepository<RecruitmentDrive
             }
         }
 
-        return new RecruitmentDrive(id, companyId, jobTitle, minCgpa, branches, deadline);
+        return new RecruitmentDrive(id, companyId, jobTitle, minCgpa, branches, deadline, isClosed);
     }
 }

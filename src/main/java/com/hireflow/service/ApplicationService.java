@@ -127,6 +127,11 @@ public class ApplicationService {
             );
         }
 
+        // Reject if drive is closed
+        if (drive.isClosed()) {
+            throw new ValidationException("Application rejected: Recruitment Drive '" + dId + "' is closed for applications.");
+        }
+
         // Check eligibility - DO NOT BYPASS
         EligibilityService.EligibilityResult eligibility = eligibilityService.checkEligibility(student, drive);
         if (!eligibility.isEligible()) {
@@ -196,7 +201,61 @@ public class ApplicationService {
     }
 
     public Application shortlistApplication(String applicationId) {
-        return updateStatus(applicationId, ApplicationStatus.SHORTLISTED, "Candidate shortlisted for technical interview round.");
+        if (applicationId == null || applicationId.trim().isEmpty()) {
+            throw new ValidationException("Application ID cannot be null or empty.");
+        }
+        String normAppId = applicationId.trim().toUpperCase();
+        Application app = getApplicationOrThrow(normAppId);
+
+        // Idempotent return if already shortlisted
+        if (app.getStatus() == ApplicationStatus.SHORTLISTED) {
+            return app;
+        }
+
+        // Validate state machine transition rules
+        ApplicationStatus currentStatus = app.getStatus();
+        Set<ApplicationStatus> allowedTargets = VALID_TRANSITIONS.getOrDefault(currentStatus, Set.of());
+        if (!allowedTargets.contains(ApplicationStatus.SHORTLISTED)) {
+            throw new ValidationException(String.format(
+                    "Cannot shortlist application '%s': Invalid status transition from '%s' to 'SHORTLISTED'. Permitted transitions: %s",
+                    normAppId, currentStatus, allowedTargets
+            ));
+        }
+
+        // Verify linked student and drive exist
+        Student student = studentRepository.findById(app.getStudentId())
+                .orElseThrow(() -> new EntityNotFoundException("Student with ID '" + app.getStudentId() + "' not found."));
+        RecruitmentDrive drive = driveRepository.findById(app.getDriveId())
+                .orElseThrow(() -> new EntityNotFoundException("Recruitment Drive with ID '" + app.getDriveId() + "' not found."));
+
+        // Recheck academic eligibility
+        EligibilityService.EligibilityResult eligibility = eligibilityService.checkAcademicEligibility(student, drive);
+        if (!eligibility.isEligible()) {
+            throw new ValidationException("Cannot shortlist candidate: Student no longer satisfies academic eligibility criteria. Reasons: " + eligibility.getFormattedReason());
+        }
+
+        // Atomic conditional status update to prevent lost updates under concurrency
+        boolean updated = applicationRepository.updateStatusConditional(
+                normAppId,
+                currentStatus,
+                ApplicationStatus.SHORTLISTED,
+                "Candidate shortlisted for technical interview round."
+        );
+
+        if (!updated) {
+            // Concurrent race: check if another thread concurrently shortlisted it
+            Application latest = getApplicationOrThrow(normAppId);
+            if (latest.getStatus() == ApplicationStatus.SHORTLISTED) {
+                return latest;
+            }
+            throw new ValidationException(String.format(
+                    "Application '%s' was concurrently updated by another operation. Current status is '%s'.",
+                    normAppId, latest.getStatus()
+            ));
+        }
+
+        publishEvent(HireFlowEventType.APPLICATION_SHORTLISTED, normAppId, "Application transitioned to SHORTLISTED");
+        return getApplicationOrThrow(normAppId);
     }
 
     public Application rejectApplication(String applicationId, String reason) {

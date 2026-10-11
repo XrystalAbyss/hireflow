@@ -29,7 +29,7 @@ public class InMemoryDriveRepository extends AbstractInMemoryRepository<Recruitm
     public List<RecruitmentDrive> findActiveDrives(LocalDate asOfDate) {
         LocalDate date = asOfDate != null ? asOfDate : LocalDate.now();
         List<RecruitmentDrive> list = store.values().stream()
-                .filter(d -> !d.isDeadlinePassed(date))
+                .filter(d -> d.isOpen(date))
                 .toList();
         return Collections.unmodifiableList(list);
     }

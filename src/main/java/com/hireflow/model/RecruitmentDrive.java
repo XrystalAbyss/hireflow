@@ -18,9 +18,15 @@ public class RecruitmentDrive {
     private double minimumCgpa;
     private final Set<String> eligibleBranches = new HashSet<>();
     private LocalDate applicationDeadline;
+    private boolean closed;
 
     public RecruitmentDrive(String id, String companyId, String jobTitle, double minimumCgpa,
                             Set<String> eligibleBranches, LocalDate applicationDeadline) {
+        this(id, companyId, jobTitle, minimumCgpa, eligibleBranches, applicationDeadline, false);
+    }
+
+    public RecruitmentDrive(String id, String companyId, String jobTitle, double minimumCgpa,
+                            Set<String> eligibleBranches, LocalDate applicationDeadline, boolean closed) {
         validateId(id);
         validateCompanyId(companyId);
         validateJobTitle(jobTitle);
@@ -32,6 +38,7 @@ public class RecruitmentDrive {
         this.jobTitle = jobTitle.trim();
         this.minimumCgpa = Math.round(minimumCgpa * 100.0) / 100.0;
         this.applicationDeadline = applicationDeadline;
+        this.closed = closed;
 
         if (eligibleBranches != null) {
             for (String branch : eligibleBranches) {
@@ -87,6 +94,18 @@ public class RecruitmentDrive {
     public boolean isDeadlinePassed(LocalDate currentDate) {
         if (currentDate == null) return false;
         return currentDate.isAfter(this.applicationDeadline);
+    }
+
+    public boolean isClosed() {
+        return closed;
+    }
+
+    public void setClosed(boolean closed) {
+        this.closed = closed;
+    }
+
+    public boolean isOpen(LocalDate currentDate) {
+        return !this.closed && !isDeadlinePassed(currentDate);
     }
 
     public String getId() {
@@ -178,6 +197,7 @@ public class RecruitmentDrive {
                 ", minimumCgpa=" + minimumCgpa +
                 ", eligibleBranches=" + eligibleBranches +
                 ", applicationDeadline=" + applicationDeadline +
+                ", closed=" + closed +
                 '}';
     }
 }

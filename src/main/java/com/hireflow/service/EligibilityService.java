@@ -61,23 +61,16 @@ public class EligibilityService {
     }
 
     /**
-     * Evaluates whether a student meets criteria for a recruitment drive as of current system date.
+     * Evaluates academic criteria only (active status, CGPA cutoff, allowed branches),
+     * omitting deadline and closure state checks.
      */
-    public EligibilityResult checkEligibility(Student student, RecruitmentDrive drive) {
-        return checkEligibility(student, drive, LocalDate.now());
-    }
-
-    /**
-     * Evaluates eligibility against a specific reference date (useful for boundary testing).
-     */
-    public EligibilityResult checkEligibility(Student student, RecruitmentDrive drive, LocalDate evaluationDate) {
+    public EligibilityResult checkAcademicEligibility(Student student, RecruitmentDrive drive) {
         if (student == null) {
             throw new ValidationException("Student cannot be null for eligibility evaluation.");
         }
         if (drive == null) {
             throw new ValidationException("RecruitmentDrive cannot be null for eligibility evaluation.");
         }
-        LocalDate date = evaluationDate != null ? evaluationDate : LocalDate.now();
 
         List<String> violations = new ArrayList<>();
 
@@ -98,7 +91,36 @@ public class EligibilityService {
                     student.getBranch(), drive.getEligibleBranches()));
         }
 
-        // 4. Application deadline
+        if (violations.isEmpty()) {
+            return EligibilityResult.eligible(student, drive);
+        } else {
+            return EligibilityResult.ineligible(violations, student, drive);
+        }
+    }
+
+    /**
+     * Evaluates whether a student meets criteria for a recruitment drive as of current system date.
+     */
+    public EligibilityResult checkEligibility(Student student, RecruitmentDrive drive) {
+        return checkEligibility(student, drive, LocalDate.now());
+    }
+
+    /**
+     * Evaluates eligibility against a specific reference date (useful for boundary testing).
+     */
+    public EligibilityResult checkEligibility(Student student, RecruitmentDrive drive, LocalDate evaluationDate) {
+        EligibilityResult academic = checkAcademicEligibility(student, drive);
+        List<String> violations = new ArrayList<>();
+        if (!academic.isEligible()) {
+            violations.addAll(academic.reasons());
+        }
+
+        LocalDate date = evaluationDate != null ? evaluationDate : LocalDate.now();
+
+        // 4. Drive closure and application deadline
+        if (drive.isClosed()) {
+            violations.add("Recruitment drive has been closed for applications.");
+        }
         if (drive.isDeadlinePassed(date)) {
             violations.add(String.format("Application deadline (%s) has passed as of %s.",
                     drive.getApplicationDeadline(), date));

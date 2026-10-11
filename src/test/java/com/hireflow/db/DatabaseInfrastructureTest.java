@@ -321,11 +321,15 @@ public class DatabaseInfrastructureTest {
         FlywayMigrationService customService = new FlywayMigrationService(dataSourceProvider.getDataSource(), true);
         assertTrue(customService.isBaselineOnMigrate(), "Explicitly configured Flyway migration service must have baselineOnMigrate=true");
 
-        MigrationInfo current = migrationService.getInfo().current();
+        MigrationInfo[] applied = migrationService.getInfo().applied();
+        assertTrue(applied.length >= 1, "At least 1 migration must be applied");
+        assertEquals("1", applied[0].getVersion().getVersion(), "Initial migration version must be 1");
+        assertEquals("initial schema", applied[0].getDescription());
+        assertTrue(applied[0].getState().isApplied(), "Migration state must be APPLIED");
 
+        MigrationInfo current = migrationService.getInfo().current();
         assertNotNull(current, "Current migration must not be null");
-        assertEquals("1", current.getVersion().getVersion(), "Current migration version must be 1");
-        assertEquals("initial schema", current.getDescription());
+        assertTrue(Integer.parseInt(current.getVersion().getVersion()) >= 1, "Current migration version must be at least 1");
         assertTrue(current.getState().isApplied(), "Migration state must be APPLIED");
     }
 

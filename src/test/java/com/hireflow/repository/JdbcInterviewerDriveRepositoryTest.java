@@ -451,6 +451,38 @@ public class JdbcInterviewerDriveRepositoryTest {
             assertEquals("Role B", updated.getJobTitle());
             assertEquals(2, updated.getEligibleBranches().size());
         }
+
+        @Test
+        @DisplayName("Drive manual closure persists is_closed flag and preserves original deadline")
+        void testDriveManualClosurePersistenceAndActiveFiltering() {
+            LocalDate deadline = LocalDate.now().plusDays(10);
+            RecruitmentDrive drive = new RecruitmentDrive("TEST-DRV-CLOSE-01", "TEST-CMP-DRV-01",
+                    "Cloud Specialist", 8.0, Set.of("CSE"), deadline, false);
+            driveRepo.add(drive);
+
+            RecruitmentDrive found = driveRepo.findById("TEST-DRV-CLOSE-01").orElseThrow();
+            assertFalse(found.isClosed(), "New drive must not be closed");
+            assertEquals(deadline, found.getApplicationDeadline());
+
+            // Active drives includes it
+            List<RecruitmentDrive> activeBefore = driveRepo.findActiveDrives(LocalDate.now());
+            assertTrue(activeBefore.stream().anyMatch(d -> "TEST-DRV-CLOSE-01".equals(d.getId())));
+
+            // Manually close the drive
+            found.setClosed(true);
+            driveRepo.save(found);
+
+            RecruitmentDrive updated = driveRepo.findById("TEST-DRV-CLOSE-01").orElseThrow();
+            assertTrue(updated.isClosed(), "Drive must be marked closed in database");
+            assertEquals(deadline, updated.getApplicationDeadline(), "Original deadline must be preserved");
+
+            // Active drives query must now exclude the closed drive
+            List<RecruitmentDrive> activeAfter = driveRepo.findActiveDrives(LocalDate.now());
+            assertFalse(activeAfter.stream().anyMatch(d -> "TEST-DRV-CLOSE-01".equals(d.getId())),
+                    "findActiveDrives must exclude manually closed drives");
+
+            driveRepo.deleteById("TEST-DRV-CLOSE-01");
+        }
     }
 
     // =========================================================================

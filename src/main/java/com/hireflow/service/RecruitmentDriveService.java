@@ -112,6 +112,16 @@ public class RecruitmentDriveService {
         return driveRepository.update(drive);
     }
 
+    public RecruitmentDrive closeDrive(String id) {
+        if (id == null || id.trim().isEmpty()) {
+            throw new ValidationException("Recruitment Drive ID cannot be null or empty.");
+        }
+        String normId = id.trim().toUpperCase();
+        RecruitmentDrive drive = getDriveOrThrow(normId);
+        drive.setClosed(true);
+        return driveRepository.update(drive);
+    }
+
     public Optional<RecruitmentDrive> getDriveById(String id) {
         if (id == null || id.trim().isEmpty()) return Optional.empty();
         return driveRepository.findById(id.trim());
