@@ -1,10 +1,10 @@
 # HireFlow - Campus Recruitment & Interview Scheduling System
 
-> **Stage 3 Status:** **Stage 3G COMPLETE (Full CAP-6 End-to-End Acceptance, Security Audit, Documentation & Release Preparation)**  
-> **Release Checkpoints:** `v1.0.0-stage1` (`66826c1`) | `v2.0.0-cap5` (`559ed7b`) | Active Branch: `develop/stage3`  
-> **Technology Stack:** **Java 21 LTS**, **Apache Maven**, **Jakarta Servlet API 6.0**, **Jakarta Server Pages (JSP) 3.1**, **JSTL 3.0**, **Apache Tomcat 10.1.x**, **BCrypt** (`at.favre.lib:bcrypt:0.10.2`), **PostgreSQL 16**, **HikariCP**, **Flyway**, **Standard Java Swing (Vanilla GUI)**, and **JUnit 5 Jupiter**.  
-> **Architecture:** Centralized `ApplicationContext` supporting dual modes (`IN_MEMORY`, `JDBC_DEV`), Jakarta EE MVC Web Portal (`/`, `/drives`, `/about`, `/health`, `/login`, `/logout`), persistent database authentication (`user_accounts`), session ID rotation, CSRF token validation & rotation, brute-force throttling, role-based authorization filters (`STUDENT`, `PLACEMENT_OFFICER`, `ADMINISTRATOR`), immediate disabled-account revocation, student self-service portal (`/student/profile`, `/student/drives`, `/student/applications`, `/student/interviews`), placement officer recruitment management portal (`/officer/dashboard`, `/officer/companies`, `/officer/drives`, `/officer/applications`, `/officer/interviewers`, `/officer/rooms`, `/officer/scheduling`, `/officer/scheduling/publish`, `/officer/scheduling/published`), Flyway V3 drive closure semantics preserving original deadlines, interview resource management with referential integrity guards, cryptographic preview tokens (128-bit CSPRNG, 15-minute TTL, multi-tab isolation, one-time anti-replay consumption), Stage 2 transactional interview publication with deterministic global resource lock ordering and PostgreSQL GiST exclusion constraints, candidate-isolated student interview schedule visibility, verified 20-step end-to-end browser & database lifecycle, unified WAR and desktop JAR packaging, an integrated Swing networking dashboard (`NetworkingPanel`), and an explicit-lifecycle TCP server.  
-> **Automated Verification:** **495 Passing Tests** (0 Failures, 0 Errors, 0 Skips across 40 test classes / 73 test suites via `mvn clean verify`).
+> **Stage 4 Status:** **Stage 4F.1 COMPLETE (CAP-7 Release Preflight, API Contract Reconciliation, and Gate A Checkpoint Ready)**<br/>
+> **Release Checkpoints:** `v1.0.0-stage1` (`66826c1`) | `v2.0.0-cap5` (`559ed7b`) | `v3.0.0-cap6` (`30e796e`) | Active Branch: `develop/stage4`<br/>
+> **Technology Stack:** **Java 21 LTS**, **Apache Maven**, **Spring Boot 4.1.1**, **Spring Framework 7.0.9**, **Spring Security 7.1.1**, **Spring Data JPA**, **Hibernate ORM 7.4.5.Final**, **Jakarta Servlet API 6.0/6.1**, **Jakarta Server Pages (JSP) 3.1**, **JSTL 3.0**, **Apache Tomcat 10.1.x & Embedded Tomcat 11.0.24**, **BCrypt** (`at.favre.lib:bcrypt:0.10.2`), **PostgreSQL 16**, **HikariCP**, **Flyway**, **Standard Java Swing (Vanilla GUI)**, and **JUnit 5 Jupiter**.<br/>
+> **Architecture:** Centralized `ApplicationContext` supporting dual modes (`IN_MEMORY`, `JDBC_DEV`), Jakarta EE MVC Web Portal, Swing Desktop Interface, and the newly established Stage 4 Spring Boot REST API (`hireflow-api` on port `8081`). Flyway V1-V3 migrations strictly own the PostgreSQL relational schema, while Hibernate runs in validation-only mode (`ddl-auto=validate`).<br/>
+> **Automated Verification:** **678 Passing Tests** (495 CAP-6 Legacy Tests + 183 Stage 4 Spring Boot Tests, 0 Failures, 0 Errors, 0 Skips).
 
 ---
 
@@ -410,3 +410,111 @@ The desktop application can still be launched directly:
 java -jar target/hireflow-1.0.0-desktop.jar
 ```
 Both desktop and web interfaces can run against the same PostgreSQL database concurrently without conflict.
+
+---
+
+## 9. Stage 4 (CAP-7) — Spring Boot REST API, Supported Framework Modernization & Authentication (In Progress)
+
+Stage 4 establishes a modern enterprise RESTful API built on **Spring Boot 4.1.1** (Spring Framework 7.0.9, Spring Security 7.1.1, Hibernate ORM 7.4.5.Final, and Tomcat 11.0.24 on Java 21 LTS) in an isolated Maven module `hireflow-api`.
+
+> **Note:** Stage 4 is currently **IN PROGRESS** on branch `develop/stage4`. Published release tags (`v1.0.0-stage1`, `v2.0.0-cap5`, `v3.0.0-cap6`) and packaging for the Jakarta EE WAR and desktop JAR remain fully intact and verified with zero regression.
+
+### Reproducible Full Project Build (Clean Checkout)
+The entire multi-artifact project can be deterministically compiled, tested, and packaged from a fresh checkout:
+```bash
+# Windows:
+build-all.cmd
+
+# Linux / macOS:
+./build-all.sh
+```
+This builds and verifies all 4 release artifacts:
+1. `target/hireflow-1.0.0.war` (Jakarta EE 10 Servlet 6.0 Web Portal)
+2. `target/hireflow-1.0.0-desktop.jar` (Stage 2 Swing Desktop GUI)
+3. `target/hireflow-1.0.0-classes.jar` (Attached core classes consumed by `hireflow-api`)
+4. `hireflow-api/target/hireflow-api-1.0.0.jar` (Spring Boot 4.1.1 standalone executable)
+
+### Running the Spring Boot REST API
+```bash
+# Run the Spring Boot API service on dedicated port 8081:
+java -jar hireflow-api/target/hireflow-api-1.0.0.jar
+
+# Or run directly via Maven:
+mvn -f hireflow-api/pom.xml spring-boot:run
+```
+
+### Stage 4 REST Endpoints:
+
+#### Public Catalogs & Operational Health:
+- `GET http://localhost:8081/api/v1/health` — Read-only service and database health check (`UP`).
+- `GET http://localhost:8081/api/v1/companies` — Public corporate partner catalog with bounded pagination and sorting.
+- `GET http://localhost:8081/api/v1/companies/{id}` — Single corporate partner profile (404 for unknown IDs).
+- `GET http://localhost:8081/api/v1/drives` — Public recruitment drives catalog with `companyId` and `activeOnly` filters.
+- `GET http://localhost:8081/api/v1/drives/{id}` — Detailed recruitment drive specifications with eligible branches.
+
+#### Session-Based REST Authentication & Security Hardening:
+- `GET http://localhost:8081/api/v1/auth/csrf` — Fetches session-bound CSRF token (`X-CSRF-TOKEN`) and establishes/refreshes session.
+- `POST http://localhost:8081/api/v1/auth/login` — Authenticates against existing PostgreSQL `user_accounts` using BCrypt (`at.favre.lib:bcrypt:0.10.2`), executes Spring Security 7 `CompositeSessionAuthenticationStrategy` (`ChangeSessionIdAuthenticationStrategy` + `CsrfAuthenticationStrategy`) to rotate the session ID (`SID_A` $\rightarrow$ `SID_B`), rejects obsolete pre-auth session IDs, and returns sanitized `UserProfileDto`. Requires valid `X-CSRF-TOKEN`.
+- `GET http://localhost:8081/api/v1/auth/me` — Returns the authenticated principal's verified identity and roles (`STUDENT`, `PLACEMENT_OFFICER`, `ADMINISTRATOR`). Enforces continuous validity check via `AccountStatusFilter`.
+- `POST http://localhost:8081/api/v1/auth/logout` — Requires CSRF token, invalidates session, clears Spring Security context, and expires the `JSESSIONID` cookie (`Max-Age=0`).
+- **Continuous Session Revocation (`AccountStatusFilter`):** Intercepts every authenticated request, re-validating account enabled status, brute-force lockouts, and role consistency directly against PostgreSQL. Mid-session account disablement or role tampering immediately invalidates the session and returns 401 Unauthorized.
+- **Cookie Security:** Hardened with `HttpOnly`, `SameSite=Lax`, `Path=/`, `server.servlet.session.tracking-modes=cookie` (preventing session ID exposure in URLs), and configurable TLS enforcement via `server.servlet.session.cookie.secure=${HIREFLOW_COOKIE_SECURE:false}`.
+
+#### Authenticated Student Workflows (Stage 4C):
+- `GET http://localhost:8081/api/v1/student/profile` — Retrieves the authenticated student's academic profile (id, name, branch, cgpa, passingYear, active). Excludes internal credentials and password hashes.
+- `GET http://localhost:8081/api/v1/student/drives` — Lists all recruitment drives with real-time student-specific eligibility evaluations, application statuses, and company details.
+- `GET http://localhost:8081/api/v1/student/drives/{id}/eligibility` — Evaluates real-time academic and operational eligibility for a recruitment drive (reusing `EligibilityService` directly without logic duplication).
+- `GET http://localhost:8081/api/v1/student/applications` — Retrieves paginated, deterministically sorted list of applications owned by the authenticated student.
+- `GET http://localhost:8081/api/v1/student/applications/{id}` — Retrieves student-owned application details. Non-owned applications return `404 Not Found` to prevent application ID guessing.
+- `POST http://localhost:8081/api/v1/student/applications` — Atomically submits a job application within `hireflowJdbcTransactionManager.runInTransaction` delegating to `ApplicationService`. Authoritative drive status revalidated under PostgreSQL row lock (`FOR SHARE`) preventing race conditions with concurrent placement officer drive closure (`UPDATE ... SET is_closed = true`). Protected by CSRF (`X-CSRF-TOKEN`). Concurrency-defended by PostgreSQL constraint `uq_application_student_drive`. Returns `201 Created` with `Location` header. Duplicate attempts return `409 Conflict`.
+- `GET http://localhost:8081/api/v1/student/dashboard` — High-level summary of total applications, pending/selected counts, eligible drives, and recent submissions.
+- **Anti-Caching Protection:** All `/api/v1/student/**` routes emit `Cache-Control: no-cache, no-store, must-revalidate`.
+
+#### Placement Officer Management Workflows (Stage 4D.1):
+- `GET http://localhost:8081/api/v1/officer/companies` — Lists corporate partners with bounded pagination (`page`, `size`) and deterministic sorting (`name`, `industry`, `id`).
+- `GET http://localhost:8081/api/v1/officer/companies/{id}` — Retrieves corporate partner profile details.
+- `POST http://localhost:8081/api/v1/officer/companies` — Registers a new company. Enforces uniqueness on ID and corporate name (`409 Conflict`). Returns `201 Created` with `Location` header.
+- `PUT http://localhost:8081/api/v1/officer/companies/{id}` — Updates corporate partner metadata.
+- `GET http://localhost:8081/api/v1/officer/drives` — Lists all recruitment drives with optional `companyId` filtering and bounded pagination.
+- `GET http://localhost:8081/api/v1/officer/drives/{id}` — Detailed recruitment drive profile with criteria and closure status.
+- `POST http://localhost:8081/api/v1/officer/drives` — Creates a recruitment drive. Validates company existence, CGPA bounds [0.0, 10.0], nonempty branch list, and future deadline.
+- `PUT http://localhost:8081/api/v1/officer/drives/{id}` — Updates editable drive fields. Closed drives reject edits (`400 Bad Request`).
+- `POST http://localhost:8081/api/v1/officer/drives/{id}/close` — Manually closes an active recruitment drive under PostgreSQL row locking. Reclosing is idempotent (`200 OK`).
+- `GET http://localhost:8081/api/v1/officer/drives/{id}/applications` — Lists candidate applications submitted for a recruitment drive with applicant academic profiles.
+- `GET http://localhost:8081/api/v1/officer/applications/{id}` — Detailed candidate application record.
+- `POST http://localhost:8081/api/v1/officer/applications/{id}/shortlist` — Advances application status from `APPLIED` to `SHORTLISTED` via atomic PostgreSQL conditional update (`UPDATE applications SET status = 'SHORTLISTED' WHERE id = ? AND status = 'APPLIED'`). Non-APPLIED or concurrent race loss returns `409 Conflict`.
+- `GET http://localhost:8081/api/v1/officer/interviewers` — Lists corporate interviewers with optional `companyId` filter.
+- `POST http://localhost:8081/api/v1/officer/interviewers` — Registers corporate interviewers linked to validated corporate partners.
+- `PUT http://localhost:8081/api/v1/officer/interviewers/{id}` — Updates corporate interviewer details.
+- `GET http://localhost:8081/api/v1/officer/rooms` — Lists interview venues and rooms.
+- `POST http://localhost:8081/api/v1/officer/rooms` — Registers interview venue with validated positive capacity ($\ge 1$).
+- `PUT http://localhost:8081/api/v1/officer/rooms/{id}` — Updates interview venue details.
+- **Access Control & Anti-Caching:** All `/api/v1/officer/**` routes require `ROLE_PLACEMENT_OFFICER` or `ROLE_ADMINISTRATOR`, enforce CSRF validation on all state mutations (`POST`, `PUT`), reject student or anonymous access, and emit `Cache-Control: no-cache, no-store, must-revalidate`.
+
+#### Officer Interview Scheduling & Timetable Publication Workflows (Stage 4E & 4E.1):
+- `POST http://localhost:8081/api/v1/officer/scheduling/preview` — Generates advisory interview timetable preview using `GreedyScheduler` and `ConflictChecker`. Enforces candidate shortlisting qualification, interviewer and room availability, and time window parameters. Guarantees **zero database writes**, zero status changes, and zero false event broadcasts. Issues cryptographically secure, officer-owned preview token (`PREV-<HEX>`) valid for 15 minutes.
+- `POST http://localhost:8081/api/v1/officer/scheduling/publish` — Confirms and transactionally publishes an advisory preview schedule. Validates preview token ownership, expiry (15-min TTL), and atomic single-use consumption. Reconstructs sessions server-side and delegates to `InterviewService.publishSchedule` under deterministic lock ordering (`Applications` $\rightarrow$ `Rooms` $\rightarrow$ `Interviewers` $\rightarrow$ `Students`) and PostgreSQL GiST exclusion constraints (`no_overlapping_room_sessions`, `no_overlapping_interviewer_sessions`, `no_overlapping_student_sessions`).
+  - **Truthful Outcome Modeling:** Returns `200 OK` for full success (`ALL_CONFIRMED`), `207 Multi-Status` for partial success (`PARTIAL_SUCCESS`), and `409 Conflict` when all proposals conflict (`NONE_CONFIRMED`).
+  - **Anti-Replay & Token Lifecycle:** Replay attempts are unconditionally rejected (`409 Conflict`). Tokens are never reset on partial failure.
+  - **Diagnostic Redaction:** Raw preview tokens are masked in diagnostic logs (`PREV-****` or `[REDACTED_PREVIEW_TOKEN]`).
+  - **Recovery Contract:** Confirmed sessions remain persistently stored in PostgreSQL. Response provides actionable recovery instructions and non-sensitive preview references.
+- `GET http://localhost:8081/api/v1/officer/scheduling/published` — Retrieves confirmed interview sessions directly from PostgreSQL with optional filtering by `driveId`, `interviewerId`, `roomId`, or `date`, with bounded pagination and deterministic sorting.
+- `GET http://localhost:8081/api/v1/officer/scheduling/published/{id}` — Retrieves detailed confirmed interview appointment by session ID (`404 Not Found` for nonexistent sessions).
+
+#### Student Interview Timetable Workflows (Stage 4E):
+- `GET http://localhost:8081/api/v1/student/interviews` — Retrieves authenticated student's confirmed interview appointments with company name, job title, room venue, confirmed start/end times, and authorized interviewer information. Guarantees cross-student timetable isolation. Emits `Cache-Control: no-cache, no-store, must-revalidate`.
+- `GET http://localhost:8081/api/v1/student/interviews/{id}` — Retrieves student-owned confirmed interview session details. Non-owned or cross-student session lookups return `404 Not Found` to prevent session enumeration.
+
+### Automated Test Verification:
+```bash
+# Run CAP-6 legacy regression suite (495 tests):
+mvn test
+
+# Run Stage 4E.1 Spring Boot integration, security, MockMvc, concurrency, and E2E suite (183 tests):
+mvn -f hireflow-api/pom.xml test
+
+# Run all 678 tests across the entire project and package all 4 artifacts:
+build-all.cmd   # Windows
+./build-all.sh  # Linux/macOS
+```
+See full architecture documentation in [docs/cap7-architecture.md](file:///c:/Users/astra/Desktop/Project/hireflow/docs/cap7-architecture.md).

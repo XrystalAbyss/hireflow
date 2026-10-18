@@ -7,6 +7,7 @@ import com.hireflow.model.Application;
 import com.hireflow.model.ApplicationStatus;
 import com.hireflow.model.RecruitmentDrive;
 import com.hireflow.model.Student;
+import com.hireflow.repository.AbstractJdbcRepository;
 import com.hireflow.repository.ApplicationRepository;
 import com.hireflow.repository.DriveRepository;
 import com.hireflow.repository.StudentRepository;
@@ -46,6 +47,7 @@ public class ApplicationService {
     private final DriveRepository driveRepository;
     private final EligibilityService eligibilityService;
     private final com.hireflow.repository.InterviewSessionRepository sessionRepository;
+    private final com.hireflow.db.TransactionManager transactionManager;
     private final AtomicInteger idCounter = new AtomicInteger(100);
     private final List<HireFlowEventListener> eventListeners = new CopyOnWriteArrayList<>();
 
@@ -53,7 +55,7 @@ public class ApplicationService {
                               StudentRepository studentRepository,
                               DriveRepository driveRepository,
                               EligibilityService eligibilityService) {
-        this(applicationRepository, studentRepository, driveRepository, eligibilityService, null);
+        this(applicationRepository, studentRepository, driveRepository, eligibilityService, null, null);
     }
 
     public ApplicationService(ApplicationRepository applicationRepository,
@@ -61,6 +63,23 @@ public class ApplicationService {
                               DriveRepository driveRepository,
                               EligibilityService eligibilityService,
                               com.hireflow.repository.InterviewSessionRepository sessionRepository) {
+        this(applicationRepository, studentRepository, driveRepository, eligibilityService, sessionRepository, null);
+    }
+
+    public ApplicationService(ApplicationRepository applicationRepository,
+                              StudentRepository studentRepository,
+                              DriveRepository driveRepository,
+                              EligibilityService eligibilityService,
+                              com.hireflow.db.TransactionManager transactionManager) {
+        this(applicationRepository, studentRepository, driveRepository, eligibilityService, null, transactionManager);
+    }
+
+    public ApplicationService(ApplicationRepository applicationRepository,
+                              StudentRepository studentRepository,
+                              DriveRepository driveRepository,
+                              EligibilityService eligibilityService,
+                              com.hireflow.repository.InterviewSessionRepository sessionRepository,
+                              com.hireflow.db.TransactionManager transactionManager) {
         if (applicationRepository == null || studentRepository == null || driveRepository == null || eligibilityService == null) {
             throw new IllegalArgumentException("Dependencies cannot be null.");
         }
@@ -69,6 +88,15 @@ public class ApplicationService {
         this.driveRepository = driveRepository;
         this.eligibilityService = eligibilityService;
         this.sessionRepository = sessionRepository;
+        if (transactionManager != null) {
+            this.transactionManager = transactionManager;
+        } else if (driveRepository instanceof AbstractJdbcRepository<?, ?> repo) {
+            this.transactionManager = repo.getTransactionManager();
+        } else if (applicationRepository instanceof AbstractJdbcRepository<?, ?> repo) {
+            this.transactionManager = repo.getTransactionManager();
+        } else {
+            this.transactionManager = null;
+        }
     }
 
     public void addEventListener(HireFlowEventListener listener) {
@@ -83,11 +111,19 @@ public class ApplicationService {
 
     private void publishEvent(HireFlowEventType type, String sourceId, String message) {
         HireFlowEvent event = new HireFlowEvent(type, sourceId, message);
-        for (HireFlowEventListener listener : eventListeners) {
-            try {
-                listener.onEvent(event);
-            } catch (Exception ignored) {
+        Runnable dispatch = () -> {
+            for (HireFlowEventListener listener : eventListeners) {
+                try {
+                    listener.onEvent(event);
+                } catch (Exception ignored) {
+                }
             }
+        };
+
+        if (com.hireflow.db.TransactionManager.isCurrentTransactionActive()) {
+            com.hireflow.db.TransactionManager.registerPostCommitAction(dispatch);
+        } else {
+            dispatch.run();
         }
     }
 
@@ -100,10 +136,19 @@ public class ApplicationService {
     }
 
     /**
-     * Submits an application for a drive. Verifies student and drive exist,
+     * Submits an application for a drive within an ambient or self-managed transaction.
+     * Verifies student and drive exist with row-level synchronization,
      * rejects duplicates, and enforces eligibility rules.
      */
     public Application submitApplication(String studentId, String driveId) {
+        if (transactionManager != null && !com.hireflow.db.TransactionManager.isCurrentTransactionActive()) {
+            return transactionManager.runInTransaction(conn -> doSubmitApplication(studentId, driveId));
+        } else {
+            return doSubmitApplication(studentId, driveId);
+        }
+    }
+
+    private Application doSubmitApplication(String studentId, String driveId) {
         if (studentId == null || studentId.trim().isEmpty()) {
             throw new ValidationException("Student ID is required.");
         }
@@ -117,7 +162,8 @@ public class ApplicationService {
         Student student = studentRepository.findById(sId)
                 .orElseThrow(() -> new EntityNotFoundException("Student with ID '" + sId + "' does not exist."));
 
-        RecruitmentDrive drive = driveRepository.findById(dId)
+        // Synchronize on authoritative drive state using findByIdForUpdate to eliminate concurrent closure races
+        RecruitmentDrive drive = driveRepository.findByIdForUpdate(dId)
                 .orElseThrow(() -> new EntityNotFoundException("Recruitment Drive with ID '" + dId + "' does not exist."));
 
         // Reject duplicate applications
@@ -201,24 +247,40 @@ public class ApplicationService {
     }
 
     public Application shortlistApplication(String applicationId) {
+        return shortlistApplication(applicationId, true);
+    }
+
+    public Application shortlistApplication(String applicationId, boolean allowAlreadyShortlisted) {
         if (applicationId == null || applicationId.trim().isEmpty()) {
             throw new ValidationException("Application ID cannot be null or empty.");
         }
         String normAppId = applicationId.trim().toUpperCase();
         Application app = getApplicationOrThrow(normAppId);
 
-        // Idempotent return if already shortlisted
+        // Check if already shortlisted
         if (app.getStatus() == ApplicationStatus.SHORTLISTED) {
-            return app;
+            if (allowAlreadyShortlisted) {
+                return app;
+            } else {
+                throw new DuplicateEntityException(String.format(
+                        "Application '%s' has already been shortlisted.",
+                        normAppId
+                ));
+            }
         }
 
-        // Validate state machine transition rules
+        // Validate state machine transition rules: shortlisting an applicant requires APPLIED (or ELIGIBLE)
         ApplicationStatus currentStatus = app.getStatus();
-        Set<ApplicationStatus> allowedTargets = VALID_TRANSITIONS.getOrDefault(currentStatus, Set.of());
-        if (!allowedTargets.contains(ApplicationStatus.SHORTLISTED)) {
+        if (currentStatus == ApplicationStatus.SCHEDULED) {
+            throw new IllegalStateException(String.format(
+                    "Cannot shortlist application '%s': candidate is already scheduled for interview.",
+                    normAppId
+            ));
+        }
+        if (currentStatus != ApplicationStatus.APPLIED && currentStatus != ApplicationStatus.ELIGIBLE) {
             throw new ValidationException(String.format(
                     "Cannot shortlist application '%s': Invalid status transition from '%s' to 'SHORTLISTED'. Permitted transitions: %s",
-                    normAppId, currentStatus, allowedTargets
+                    normAppId, currentStatus, VALID_TRANSITIONS.getOrDefault(currentStatus, Set.of())
             ));
         }
 
@@ -243,13 +305,22 @@ public class ApplicationService {
         );
 
         if (!updated) {
-            // Concurrent race: check if another thread concurrently shortlisted it
+            // Concurrent race: authoritative reread to determine cause of zero updated rows
             Application latest = getApplicationOrThrow(normAppId);
             if (latest.getStatus() == ApplicationStatus.SHORTLISTED) {
-                return latest;
+                throw new DuplicateEntityException(String.format(
+                        "Application '%s' was concurrently shortlisted by another officer.",
+                        normAppId
+                ));
             }
-            throw new ValidationException(String.format(
-                    "Application '%s' was concurrently updated by another operation. Current status is '%s'.",
+            if (latest.getStatus() == ApplicationStatus.SCHEDULED) {
+                throw new IllegalStateException(String.format(
+                        "Cannot shortlist application '%s': candidate is already scheduled for interview.",
+                        normAppId
+                ));
+            }
+            throw new IllegalStateException(String.format(
+                    "Cannot shortlist application '%s': invalid status transition from '%s' to 'SHORTLISTED'.",
                     normAppId, latest.getStatus()
             ));
         }

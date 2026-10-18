@@ -53,11 +53,19 @@ public class RecruitmentDriveService {
 
     private void publishEvent(HireFlowEventType type, String sourceId, String message) {
         HireFlowEvent event = new HireFlowEvent(type, sourceId, message);
-        for (HireFlowEventListener listener : eventListeners) {
-            try {
-                listener.onEvent(event);
-            } catch (Exception ignored) {
+        Runnable dispatch = () -> {
+            for (HireFlowEventListener listener : eventListeners) {
+                try {
+                    listener.onEvent(event);
+                } catch (Exception ignored) {
+                }
             }
+        };
+
+        if (com.hireflow.db.TransactionManager.isCurrentTransactionActive()) {
+            com.hireflow.db.TransactionManager.registerPostCommitAction(dispatch);
+        } else {
+            dispatch.run();
         }
     }
 

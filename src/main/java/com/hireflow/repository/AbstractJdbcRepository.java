@@ -49,6 +49,10 @@ public abstract class AbstractJdbcRepository<T, ID> implements CrudRepository<T,
         this.entityName = Objects.requireNonNull(entityName, "Entity name must not be null.");
     }
 
+    public TransactionManager getTransactionManager() {
+        return this.transactionManager;
+    }
+
     /**
      * Acquires the active transaction connection if within TransactionManager context,
      * otherwise borrows a connection from the underlying DataSource pool.

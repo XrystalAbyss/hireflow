@@ -175,7 +175,8 @@ public class ApplicationContext implements AutoCloseable {
                 this.studentRepository,
                 this.driveRepository,
                 this.eligibilityService,
-                this.sessionRepository
+                this.sessionRepository,
+                this.transactionManager
         );
         this.interviewService = new InterviewService(
                 this.sessionRepository,

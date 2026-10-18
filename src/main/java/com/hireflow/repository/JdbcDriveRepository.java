@@ -90,6 +90,38 @@ public class JdbcDriveRepository extends AbstractJdbcRepository<RecruitmentDrive
     }
 
     @Override
+    public Optional<RecruitmentDrive> findByIdForUpdate(String id) {
+        if (!TransactionManager.isCurrentTransactionActive()) {
+            throw new IllegalStateException("Cannot acquire lock on recruitment drive outside of an active transaction. Call TransactionManager.runInTransaction first.");
+        }
+        if (id == null || id.trim().isEmpty()) {
+            return Optional.empty();
+        }
+        String normId = normalizeId(id);
+        // Acquire row-level synchronization on recruitment_drives in current transaction context.
+        // Uses FOR SHARE so multiple concurrent student applications for the same drive proceed in parallel,
+        // while concurrent drive closure (UPDATE) is strictly serialized with application submission.
+        String lockSql = "SELECT id, is_closed FROM recruitment_drives WHERE id = ? FOR SHARE";
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(lockSql)) {
+            ps.setString(1, normId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return Optional.empty();
+                }
+            }
+        } catch (SQLException ex) {
+            throw translateException("Lock recruitment drive for update", ex);
+        }
+        return findById(normId);
+    }
+
+    @Override
+    public Optional<RecruitmentDrive> findByIdWithSharedLock(String id) {
+        return findByIdForUpdate(id);
+    }
+
+    @Override
     public List<RecruitmentDrive> findAll() {
         String sql = BASE_SELECT_SQL +
                 "GROUP BY rd.id, rd.company_id, rd.job_title, rd.minimum_cgpa, rd.application_deadline, rd.is_closed " +
