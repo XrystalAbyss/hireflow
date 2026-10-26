@@ -96,12 +96,17 @@ powershell.exe -ExecutionPolicy Bypass -File scripts/demo/Setup-HireFlow-Demo.ps
 2. **Exact Manifest Scoped Cleanups:** Only deletes explicitly owned fixture records. Never uses wildcards (`LIKE 'DRV-DEMO-%'`).
 3. **Preservation of Manual Edits:** Uses `ON CONFLICT (id) DO NOTHING` for all core entities. Running setup twice does not reset application decisions, interview allocations, or modified room capacities.
 
-#### 4.2 Resetting Fixtures Safely
+#### 4.2 Resetting Fixtures Safely (Administrative / Test Maintenance Only)
 
-To reset only the demonstration fixtures while preserving all baseline data and manual entries:
+> [!CAUTION]
+> **Administrative & Maintenance Scope:** Fixture resets are administrative maintenance and automated test verification procedures—they are **NOT** part of the normal classroom demonstration. Do not execute reset scripts during a live faculty evaluation.
+>
+> **Fixture Ownership Caveat:** Reset scripts delete records matching the exact fixture manifest (`APP-U26-001` through `APP-U26-084`). Manually editing the status or remarks of a fixture-owned record does **not** decouple it from the fixture manifest; it will still be deleted during an administrative reset. Genuine independent applications (created with non-fixture IDs) and independent interview sessions are safeguarded by PL/pgSQL fail-closed guards that automatically abort the transaction if detected.
+
+To reset only the demonstration fixtures in a disposable test environment:
 
 ```powershell
-# Reset U26 demonstration season only
+# Reset U26 demonstration season only (disposable/test context)
 docker exec -i hireflow-cap8-postgres psql -U hireflow_cap8_app -d hireflow_cap8_it < infra/cap8-integration/university-season-reset.sql
 
 # Reset standard demo scenario (explicit manifest, preserves DRV-DEMO-VIVA22)
@@ -114,16 +119,16 @@ docker exec -i hireflow-cap8-postgres psql -U hireflow_cap8_app -d hireflow_cap8
 
 #### Step 1: Officer Command Center (`/officer/dashboard`)
 1. Log in with officer credentials (`demo.officer`).
-2. Verify system statistics: 12 corporate drives, 41 campus facilities, 72 enrolled students, 92 applications, and 21 confirmed interviews.
+2. Verify system statistics: 12 corporate drives, 41 campus facilities, 72 enrolled students, 92 applications, and 21 confirmed interviews (live DB counts reflect current operational baseline).
 3. Observe real-time status breakdowns across active and closed drives.
 
 #### Step 2: Drive Directory & Historical Preservation (`/officer/drives`)
 1. Browse active corporate drives (`DRV-U26-01` through `DRV-U26-05`).
-2. Inspect closed historical drive `DRV-U26-06` (Stratos Consulting Group).
+2. Inspect closed historical drive `DRV-U26-06` (BioInformatics Core Systems).
 3. Confirm that closed drives display the distinct "Drive Closed" badge and retain historical candidates.
 
 #### Step 3: Candidate Review & Shortlisting (`/officer/candidates`)
-1. Filter candidates by drive `DRV-U26-01` (CloudScale Technologies).
+1. Filter candidates by drive `DRV-U26-01` (Aether Cloud Networks).
 2. Review applicant list showing 4 `APPLIED`, 4 `SHORTLISTED`, 3 `SCHEDULED`, and 3 `REJECTED`.
 3. Inspect student CGPA and branch badges.
 4. Demonstrate manual status change on an `APPLIED` candidate to `SHORTLISTED`.
@@ -138,7 +143,7 @@ docker exec -i hireflow-cap8-postgres psql -U hireflow_cap8_app -d hireflow_cap8
 3. Observe capacity badges, floor indicators, and location descriptions.
 
 #### Step 5: Scheduling Studio Live Allocation (`/officer/scheduling`)
-1. Select active drive `DRV-U26-01` (CloudScale Technologies).
+1. Select active drive `DRV-U26-01` (Aether Cloud Networks).
 2. Observe 4 shortlisted candidates currently awaiting scheduling.
 3. Select interviewers (`INT-U26-01`, `INT-U26-02`) and rooms (`KF02`, `KF03`).
 4. Set window time (e.g., 09:00 to 13:00) with 45-minute duration and 15-minute buffer.
@@ -146,10 +151,9 @@ docker exec -i hireflow-cap8-postgres psql -U hireflow_cap8_app -d hireflow_cap8
    - Executes deterministic `GreedyScheduler`.
    - Generates ephemeral preview token.
    - Previews timetable allocations without mutating the database.
-6. Click **Confirm & Publish Timetable**:
-   - Revalidates candidate eligibility, room availability, and interviewer constraints.
-   - Commits sessions with PostgreSQL exclusion constraint protection.
-   - Updates candidate statuses to `SCHEDULED`.
+6. **Faculty Demonstration Note on Publication:**
+   - In a live presentation, showcasing the **Advisory Preview** is sufficient to prove the greedy scheduling algorithm and conflict checker without permanently mutating the database.
+   - If permanent publication is demonstrated, it commits sessions with PostgreSQL exclusion constraint protection and updates candidate statuses to `SCHEDULED`.
 
 ---
 

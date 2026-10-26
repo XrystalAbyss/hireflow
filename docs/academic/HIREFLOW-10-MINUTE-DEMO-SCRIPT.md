@@ -81,28 +81,30 @@
   4. **Generate Advisory Preview:** Click **Generate Advisory Schedule**.
      - Emphasize to examiners: *Zero database writes occurred.* A secure preview token (`PREV-...`) was generated in memory with a 15-minute expiry.
      - Inspect the visual timetable grid and accessible tabular matrix.
-  5. **Durable Publication:**
-     - Click **Publish Schedule to Campus**.
-     - Check the required operational acknowledgement and confirm.
-     - Server commits the transactions via JDBC in PostgreSQL.
-     - Outcome: `ALL_CONFIRMED` (HTTP 200).
+  5. **Advisory Preview & Durable Publication:**
+     - Point out: *Zero database writes occurred during preview generation.* A secure preview token (`PREV-...`) was generated in memory with a 15-minute expiry.
+     - Inspect the visual timetable grid and accessible tabular matrix.
+     - *Demonstration Note:* For viva evaluation, demonstrating the Advisory Preview fully proves the deterministic greedy scheduling algorithm without altering the preserved database baseline.
+     - If demonstrating publication: Click **Publish Schedule to Campus**, check the operational acknowledgement, and confirm. The server commits the transactions via JDBC in PostgreSQL under GiST exclusion constraint protection (`ALL_CONFIRMED`).
   6. **Cross-Portal Verification:**
      - Re-sign in as student `demo.student`.
-     - Open **Interview Timetable**: The newly scheduled interview session appears immediately with room code, interviewer name, and exact appointment time.
+     - Open **Interview Timetable**: Confirmed interview appointments appear immediately with room code, interviewer name, and exact appointment time.
 
 ---
 
 ### Minute 8:30 – 10:00 | Part F: Test Engineering, Disaster Recovery & Conclusion
 - **Presenter Action:** Present the automated test summary:
-  - **Core Java Suite:** 519 unit, domain, repository, and Swing tests (100% passing).
-  - **Spring Boot API Suite:** 197 integration, MockMvc, concurrency, and security tests (100% passing).
-  - **Frontend Suite:** 147 Vitest component tests (100% passing).
-  - **Playwright E2E Suite:** Multi-viewport visual, accessibility, and 40-step live integration tests.
-  - **Total Automated Test Count:** **863 automated tests passing**.
+  - **Core Java Backend:** **522** domain, generic repository, concurrency, and Swing tests (100% passing).
+  - **Spring Boot REST API:** **198** integration, MockMvc, concurrency, and security tests (100% passing).
+  - **Frontend UI Suite:** **147** Vitest component tests (100% passing, 5 skipped for live-only).
+  - **Playwright Browser E2E:** **16** passed (7 responsive viewports, 5 automated WCAG 2.1 AA scans, 4 live integration, 1 skipped).
+  - **Grand Total:** **883 automated tests passing** (0 failures, 6 skipped; 26 real service tests, 857 unit/mock/isolated).
+- **Architectural Primacy:**
+  - Emphasize to examiners: *Java remains the application's core engineering foundation*—all business invariants, greedy scheduling algorithms, transaction boundaries, and security models are executed in Java 21. React 19 acts as the modern browser interface.
 - **Disaster Recovery & Git Anchors:**
-  - Historical snapshots safely tagged: `v0.8.6.2-prototype-snapshot`, `v0.8.6.3-university-season-snapshot`.
-  - Verified local PostgreSQL logical backups created before modifications.
-  - Final Academic Release tag: `v0.8.6.4-final-academic-prototype`.
+  - Protected historical snapshots: `v0.8.6.2-prototype-snapshot`, `v0.8.6.3-university-season-snapshot`, `v0.8.6.4-final-academic-prototype`.
+  - Final signed-off release checkpoint: `v0.8.6.4.1-academic-signoff` on `develop/stage5` (`4c01f85`).
+  - Offline Git bundle and PostgreSQL logical backups safely verified via automated drill.
 - **Closing Statement:**
   > *"HireFlow demonstrates that complex scheduling algorithms and modern contemporary user experiences can be grounded firmly in core Advanced Java software engineering principles. We welcome your questions."*
 
