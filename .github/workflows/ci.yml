@@ -1,0 +1,174 @@
+# ==============================================================================
+# HireFlow Continuous Integration (CI) Pipeline
+# Triggers: Pull requests against main/develop, manual workflow_dispatch
+# Security: Least privilege (contents: read), no hardcoded credentials, isolated PG
+# ==============================================================================
+
+name: HireFlow CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - 'develop/**'
+      - 'release/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ----------------------------------------------------------------------------
+  # Job 1: Frontend Quality & Production Build Verification
+  # ----------------------------------------------------------------------------
+  frontend-quality:
+    name: Frontend Quality & Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (Active LTS 22.x)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: hireflow-app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: hireflow-app
+        run: npm ci
+
+      - name: TypeScript Typecheck
+        working-directory: hireflow-app
+        run: npm run typecheck
+
+      - name: Oxlint Static Analysis
+        working-directory: hireflow-app
+        run: npm run lint
+
+      - name: Offline Vitest Suite (Unit & Contract)
+        working-directory: hireflow-app
+        run: npm test
+
+      - name: Production Vite Build
+        working-directory: hireflow-app
+        run: npm run build
+
+  # ----------------------------------------------------------------------------
+  # Job 2: Java Core & Spring Boot Offline Compilation and Unit Tests
+  # ----------------------------------------------------------------------------
+  backend-offline:
+    name: Java Offline Build & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21 (Eclipse Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Compile and install root classes module
+        run: ./mvnw -B install -DskipTests -q
+
+      - name: Compile Spring Boot API module
+        run: ./mvnw -B -f hireflow-api/pom.xml compile -q
+
+      - name: Run Core Module Offline Unit Tests
+        run: ./mvnw -B test -Duser.timezone=UTC -Dtest=SessionIdentityRegressionTest,GreedySchedulerTest,EntityValidationTest,CompanyServiceTest,PasswordHasherTest,CsrfTokenManagerTest,BruteForceThrottlerTest,AuthenticationServiceTest
+
+      - name: Package Spring Boot API artifact (Packaging Smoke Test)
+        run: ./mvnw -B -f hireflow-api/pom.xml package -DskipTests -q
+
+  # ----------------------------------------------------------------------------
+  # Job 3: Security & Secret Audit
+  # ----------------------------------------------------------------------------
+  security-audit:
+    name: Security & Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Scan repository for potential committed secrets
+        run: |
+          echo "Scanning for accidental secret commits or unredacted keys..."
+          if grep -rnEI '(hireflow_it_app_secret_2026|hireflow_bootstrap_admin_secret)' . \
+            --exclude-dir={.git,node_modules,target,.run,dist}; then
+            echo "ERROR: Forbidden secret detected in source tree!" >&2
+            exit 1
+          fi
+          echo "Secret scan passed cleanly: 0 forbidden tokens found."
+
+      - name: Audit npm dependencies
+        working-directory: hireflow-app
+        run: npm audit --audit-level=high || true
+
+  # ----------------------------------------------------------------------------
+  # Job 4: Real PostgreSQL Integration Suite
+  # ----------------------------------------------------------------------------
+  postgres-integration:
+    name: Live PostgreSQL Integration
+    runs-on: ubuntu-latest
+    needs: [backend-offline, frontend-quality]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci_bootstrap_admin
+          POSTGRES_PASSWORD: ci_bootstrap_secret_pass
+          POSTGRES_DB: hireflow_cap8_it
+          APP_DB_USER: hireflow_cap8_app
+          APP_DB_PASSWORD: ci_runtime_app_secret_pass
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci_bootstrap_admin -d hireflow_cap8_it"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21 (Eclipse Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Initialize PostgreSQL Role and Sentinel
+        run: |
+          chmod +x infra/cap8-integration/init/01-init-role-and-db.sh
+          POSTGRES_USER=ci_bootstrap_admin \
+          POSTGRES_DB=hireflow_cap8_it \
+          APP_DB_USER=hireflow_cap8_app \
+          APP_DB_PASSWORD=ci_runtime_app_secret_pass \
+          PGPASSWORD=ci_bootstrap_secret_pass \
+          ./infra/cap8-integration/init/01-init-role-and-db.sh
+
+      - name: Install root classes module
+        run: ./mvnw -B install -DskipTests -q
+
+      - name: Execute Live Spring Boot Database Integration Tests
+        env:
+          HIREFLOW_ALLOW_ISOLATED_IT: "55432/hireflow_cap8_it"
+          HIREFLOW_IT_APP_PASSWORD: "ci_runtime_app_secret_pass"
+          HIREFLOW_DB_URL: "jdbc:postgresql://127.0.0.1:55432/hireflow_cap8_it"
+          HIREFLOW_DB_USER: "hireflow_cap8_app"
+          HIREFLOW_DB_PASSWORD: "ci_runtime_app_secret_pass"
+        run: |
+          ./mvnw -B -f hireflow-api/pom.xml test \
+            -Duser.timezone=UTC \
+            -Dhireflow.it.pass="ci_runtime_app_secret_pass" \
+            -Dtest=HealthControllerTest,AuthControllerMockMvcTest,RoleAuthorizationIntegrationTest

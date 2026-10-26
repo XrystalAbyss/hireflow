@@ -34,6 +34,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 class OfficerControllerMockMvcTest {
+    @org.springframework.beans.factory.annotation.Autowired
+    private javax.sql.DataSource cleanupDataSource;
+
 
     @Autowired
     private MockMvc mockMvc;
@@ -148,18 +151,9 @@ class OfficerControllerMockMvcTest {
     }
 
     private void cleanAllTestData() {
-        try { applicationRepository.deleteById(APP_ID); } catch (Exception ignored) {}
-        try { interviewerRepository.deleteById(INT_ID); } catch (Exception ignored) {}
-        try { roomRepository.deleteById(ROOM_ID); } catch (Exception ignored) {}
-        try { driveRepository.deleteById(DRV_ID); } catch (Exception ignored) {}
-        try { driveRepository.deleteById("DRV-NEW-01"); } catch (Exception ignored) {}
-        try { companyRepository.deleteById(CMP_ID); } catch (Exception ignored) {}
-        try { companyRepository.deleteById("CMP-NEW-01"); } catch (Exception ignored) {}
-        try { studentRepository.deleteById(STU_ID); } catch (Exception ignored) {}
-        try { interviewerRepository.deleteById("INT-NEW-01"); } catch (Exception ignored) {}
-        try { roomRepository.deleteById("RM-NEW-01"); } catch (Exception ignored) {}
-        try { userAccountRepository.findByUsername("officer_dan").ifPresent(a -> userAccountRepository.deleteById(a.getId())); } catch (Exception ignored) {}
-        try { userAccountRepository.findByUsername("david_student").ifPresent(a -> userAccountRepository.deleteById(a.getId())); } catch (Exception ignored) {}
+        com.hireflow.api.testsupport.SafeTestDatabase.clean(cleanupDataSource,
+            new String[]{"CMP-OFF-01", "DRV-OFF-01", "STU-OFF-01", "APP-OFF-01", "INT-OFF-01", "RM-OFF-01", "DRV-NEW-01", "CMP-NEW-01", "INT-NEW-01", "RM-NEW-01"},
+            new String[]{"officer_dan", "david_student"});
     }
 
     // ==========================================

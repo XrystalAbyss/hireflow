@@ -61,6 +61,9 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest
 class DriveClosureAndSubmissionConcurrencyPostgresTest {
+    @org.springframework.beans.factory.annotation.Autowired
+    private javax.sql.DataSource cleanupDataSource;
+
 
     @Autowired
     @Qualifier("hireflowJdbcTransactionManager")
@@ -120,25 +123,9 @@ class DriveClosureAndSubmissionConcurrencyPostgresTest {
 
     @AfterEach
     void tearDownFixtures() {
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(
-                     "DELETE FROM applications WHERE student_id IN ('STU-CONC-01', 'STU-CONC-02', 'STU-CONC-03') " +
-                     "OR drive_id IN ('DRV-CONC-OPEN', 'DRV-CONC-CLOSED', 'DRV-CONC-EXP', 'DRV-CONC-RACE')")) {
-            ps.executeUpdate();
-        } catch (SQLException ignored) {
-        }
-
-        try {
-            driveRepository.deleteById(DRV_OPEN);
-            driveRepository.deleteById(DRV_CLOSED);
-            driveRepository.deleteById(DRV_EXPIRED);
-            driveRepository.deleteById(DRV_RACE);
-            studentRepository.deleteById(STU_1);
-            studentRepository.deleteById(STU_2);
-            studentRepository.deleteById(STU_3);
-            companyRepository.deleteById(TEST_CMP);
-        } catch (Exception ignored) {
-        }
+        com.hireflow.api.testsupport.SafeTestDatabase.clean(cleanupDataSource,
+            new String[]{"CMP-CONC-01", "STU-CONC-01", "STU-CONC-02", "STU-CONC-03", "DRV-CONC-OPEN", "DRV-CONC-CLOSED", "DRV-CONC-EXP", "DRV-CONC-RACE", "APP-FAIL-01"},
+            new String[]{});
     }
 
     @Test

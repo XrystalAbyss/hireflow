@@ -72,7 +72,7 @@ public class JdbcInterviewSessionRepositoryTest {
         }
 
         String url = System.getenv().getOrDefault("HIREFLOW_DB_URL",
-                System.getProperty("hireflow.db.url", localProps.getProperty("hireflow.db.url", "jdbc:postgresql://localhost:5432/hireflow_test")));
+                System.getProperty("hireflow.db.url", localProps.getProperty("hireflow.db.url", com.hireflow.testsupport.CoreTestDatabase.url())));
         String user = System.getenv().getOrDefault("HIREFLOW_DB_USER",
                 System.getProperty("hireflow.db.user", localProps.getProperty("hireflow.db.user", "hireflow_user")));
         String pass = System.getenv().getOrDefault("HIREFLOW_DB_PASSWORD",
@@ -155,21 +155,7 @@ public class JdbcInterviewSessionRepositoryTest {
     }
 
     private static void cleanTestData() {
-        if (dataSourceProvider == null || dataSourceProvider.isClosed()) return;
-        try (Connection conn = dataSourceProvider.getConnection();
-             Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate("DELETE FROM interview_sessions WHERE id LIKE 'TEST-%' OR student_id LIKE 'TEST-%' OR application_id LIKE 'TEST-%'");
-            stmt.executeUpdate("DELETE FROM interviewer_availabilities WHERE id LIKE 'TEST-%' OR interviewer_id LIKE 'TEST-%'");
-            stmt.executeUpdate("DELETE FROM interviewers WHERE id LIKE 'TEST-%'");
-            stmt.executeUpdate("DELETE FROM applications WHERE id LIKE 'TEST-%' OR student_id LIKE 'TEST-%' OR drive_id LIKE 'TEST-%'");
-            stmt.executeUpdate("DELETE FROM drive_eligible_branches WHERE drive_id LIKE 'TEST-%'");
-            stmt.executeUpdate("DELETE FROM recruitment_drives WHERE id LIKE 'TEST-%' OR company_id LIKE 'TEST-%'");
-            stmt.executeUpdate("DELETE FROM rooms WHERE id LIKE 'TEST-%'");
-            stmt.executeUpdate("DELETE FROM students WHERE id LIKE 'TEST-%'");
-            stmt.executeUpdate("DELETE FROM companies WHERE id LIKE 'TEST-%'");
-        } catch (Exception ex) {
-            System.err.println("cleanTestData error: " + ex.getMessage());
-        }
+        com.hireflow.testsupport.CoreTestDatabase.cleanCurrentClass();
     }
 
     // =========================================================================

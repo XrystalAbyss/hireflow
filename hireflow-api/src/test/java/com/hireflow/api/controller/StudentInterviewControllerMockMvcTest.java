@@ -34,6 +34,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @DisplayName("StudentInterviewControllerMockMvcTest - Authenticated Student Interview Timetable Retrieval and Cross-Student Isolation")
 class StudentInterviewControllerMockMvcTest {
+    @org.springframework.beans.factory.annotation.Autowired
+    private javax.sql.DataSource cleanupDataSource;
+
 
     @Autowired
     private MockMvc mockMvc;
@@ -170,17 +173,9 @@ class StudentInterviewControllerMockMvcTest {
     }
 
     private void cleanDatabase() {
-        try (java.sql.Connection conn = dataSource.getConnection();
-             java.sql.Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate("DELETE FROM interview_sessions WHERE id LIKE 'SES-%'");
-            stmt.executeUpdate("DELETE FROM applications WHERE drive_id = '" + DRV_ID + "' OR id LIKE 'APP-STU-%'");
-            stmt.executeUpdate("DELETE FROM interviewers WHERE id = '" + INT_1_ID + "'");
-            stmt.executeUpdate("DELETE FROM rooms WHERE id = '" + ROOM_1_ID + "'");
-            stmt.executeUpdate("DELETE FROM recruitment_drives WHERE id = '" + DRV_ID + "'");
-            stmt.executeUpdate("DELETE FROM companies WHERE id = '" + CMP_ID + "'");
-            stmt.executeUpdate("DELETE FROM user_accounts WHERE username IN ('stu_diana', 'stu_clark', 'off_user')");
-            stmt.executeUpdate("DELETE FROM students WHERE id IN ('" + STU_1_ID + "', '" + STU_2_ID + "')");
-        } catch (Exception ignored) {}
+        com.hireflow.api.testsupport.SafeTestDatabase.clean(cleanupDataSource,
+            new String[]{"CMP-STU-INT", "DRV-STU-INT", "STU-STU-INT1", "STU-STU-INT2", "APP-STU-INT1", "APP-STU-INT2", "INT-STU-INT1", "RM-STU-INT1", "SES-STU-INT1", "SES-STU-INT2"},
+            new String[]{"stu_diana", "stu_clark", "off_user"});
     }
 
     @Test

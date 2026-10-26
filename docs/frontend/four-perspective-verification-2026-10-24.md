@@ -1,0 +1,22 @@
+# HireFlow four-perspective live review — 24 October 2026
+
+This review uses the live React/Spring Boot application and the verified isolated PostgreSQL 16 container at `127.0.0.1:55432/hireflow_cap8_it`. Host port 5432 and its databases were not used. The repository's uncommitted work remains uncommitted.
+
+| Perspective | Working now | Improved in this pass | Remaining product gap |
+| --- | --- | --- | --- |
+| Student | Institutional sign-in, verified academic profile, eligibility, applications, and published interview timetable. | The dashboard, opportunity list, application list, and interview list refresh from the API about every 30 seconds while visible; stale queries also refresh on tab focus/reconnect. Manual refresh is available. A profile failure shows unavailable data instead of a fictional branch or GPA. | Application search/status filtering is local to the loaded page; a later server-side search/filter would cover the full history. Student-facing communication of post-interview outcomes needs a complete officer workflow. |
+| Placement officer | Company and drive administration, candidate review and shortlisting, interviewer/room resources, advisory scheduling, and transactional publication. | 30-second drive/roster refresh, manual refresh for all dashboard summaries, explicit retry/error state, honest counts scoped to the displayed active drives, and a phone layout with every campaign's review action visible. | The dashboard's status snapshot covers up to 100 active drives; an aggregated API would give a complete count at scale. The post-interview selection/rejection process has no complete officer UI in the current React app. |
+| Recruiter | Company, recruitment-drive, and interviewer records are managed by placement officers. | The officer's campaign overview now exposes the information needed to coordinate with a partner on a phone. The user chose an officer-managed recruiter process. | There is no recruiter login or recruiter-only portal by design. A controlled partner briefing or communication workflow, with explicit candidate-data sharing rules, is still needed before external recruiter handoff. |
+| Developer | Fail-closed database preflight, role and CSRF guards, real browser journey, concurrency/persistence checks. | Added a guarded two-browser-session test for officer creation → student visibility → student application → officer visibility → shortlisting → student visibility, with PostgreSQL verification. Scoped frontend HTTP and browser test cleanup to exact run IDs. | The refresh is 30-second polling, not server push; production scale would benefit from an event stream and a narrow aggregated officer summary endpoint. CI needs a dedicated isolated PostgreSQL environment and a documented data-retention policy for test artifacts. |
+
+## Verification executed
+
+- Frontend build passed. Lint exited 0 with pre-existing advisory warnings.
+- Frontend: 151/151 tests passed with `HIREFLOW_ALLOW_ISOLATED_IT=55432/hireflow_cap8_it`.
+- Live Playwright: two passed — cross-session update/persistence and the established 40-step Student → Officer → Scheduling → Student journey. The independent administrator browser test was intentionally skipped because its environment credentials were absent; `Check-HireFlow` independently verified administrator login, role, and officer access.
+- The cross-session test observed changes in open browser sessions without reload, verified the final `SHORTLISTED` status in PostgreSQL, then deleted only its own `CMP-X-*` and `DRV-X-*` records by exact ID. No `CMP-X-*` or `DRV-X-*` records remained afterwards; five existing `DRV-DEMO-*` drives remained.
+- Student and officer dashboards at 1440px and 390px had no horizontal page overflow and zero automated WCAG 2.1 A/AA axe violations. Final officer phone screenshot: `.run/evidence/four-perspective-officer-390-final.png`.
+- `Check-HireFlow` passed all critical live checks, including the database sentinel and restricted role. The previous core Java and API Java suites were not rerun in this frontend-focused pass; their last executed results are in `demo-readiness-report.md`.
+
+The 30-second refresh applies to the listed student views and officer drive/roster queries while those views are open in a visible tab. Other queries refresh when stale on tab focus/reconnect or after an explicit action. It is not instant messaging or a guarantee that every external change appears within 30 seconds under network failure. Failed requests remain visible as errors or unavailable values and can be retried.
+

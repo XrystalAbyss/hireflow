@@ -38,7 +38,7 @@ public class JdbcDevRestartVerification {
 
         return DatabaseConfig.builder()
                 .mode(DatabaseMode.JDBC_DEV)
-                .jdbcUrl("jdbc:postgresql://localhost:5432/hireflow_dev")
+                .jdbcUrl(com.hireflow.testsupport.CoreTestDatabase.url())
                 .username(user)
                 .password(pass)
                 .maximumPoolSize(3)

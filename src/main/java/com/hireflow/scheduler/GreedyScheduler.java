@@ -14,6 +14,9 @@ import java.util.*;
 /**
  * Deterministic greedy interval interview scheduling engine.
  * Generates feasible proposed interview schedules under strict conflict constraints.
+ * Proposed session IDs use application-scoped name-based UUID v3 (32 hex characters without hyphens)
+ * to ensure determinism across previews while eliminating sequential counter collisions between concurrent requests.
+ * The generated 32-character ID strictly conforms to the PostgreSQL VARCHAR(32) column constraint.
  */
 public class GreedyScheduler implements SchedulingEngine {
 
@@ -80,7 +83,7 @@ public class GreedyScheduler implements SchedulingEngine {
 
         List<InterviewSession> proposedSessions = new ArrayList<>();
         List<UnscheduledApplication> unscheduled = new ArrayList<>();
-        int propIdCounter = 1;
+
 
         // 5. Greedy Allocation Pass
         for (Application app : sortedApps) {
@@ -176,7 +179,11 @@ public class GreedyScheduler implements SchedulingEngine {
                         }
 
                         // Feasible slot found!
-                        String sessionId = String.format("SES-PROP-%03d", propIdCounter++);
+                        // Application-scoped IDs remain deterministic across previews and do not
+                        // collide when separate scheduling requests start their own counters.
+                        String sessionId = java.util.UUID.nameUUIDFromBytes(
+                                ("hireflow:interview:" + app.getId()).getBytes(java.nio.charset.StandardCharsets.UTF_8))
+                                .toString().replace("-", "").toUpperCase(java.util.Locale.ROOT);
                         InterviewSession proposedSession = new InterviewSession(
                                 sessionId,
                                 app.getId(),

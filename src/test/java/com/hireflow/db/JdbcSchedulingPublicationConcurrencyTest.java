@@ -39,7 +39,7 @@ class JdbcSchedulingPublicationConcurrencyTest {
             }
         }
         DB_URL = System.getenv().getOrDefault("HIREFLOW_DB_URL",
-                System.getProperty("hireflow.db.url", localProps.getProperty("hireflow.db.url", "jdbc:postgresql://localhost:5432/hireflow_test")));
+                System.getProperty("hireflow.db.url", localProps.getProperty("hireflow.db.url", com.hireflow.testsupport.CoreTestDatabase.url())));
         DB_USER = System.getenv().getOrDefault("HIREFLOW_DB_USER",
                 System.getProperty("hireflow.db.user", localProps.getProperty("hireflow.db.user", "hireflow_user")));
         DB_PASS = System.getenv().getOrDefault("HIREFLOW_DB_PASSWORD",
@@ -98,18 +98,7 @@ class JdbcSchedulingPublicationConcurrencyTest {
     }
 
     private static void cleanAllTestDataDirectSql() {
-        if (!dbAvailable) return;
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
-             var stmt = conn.createStatement()) {
-            stmt.executeUpdate("DELETE FROM interview_sessions WHERE id LIKE 'PG-%'");
-            stmt.executeUpdate("DELETE FROM applications WHERE id LIKE 'PG-%'");
-            stmt.executeUpdate("DELETE FROM interviewers WHERE id LIKE 'PG-%'");
-            stmt.executeUpdate("DELETE FROM rooms WHERE id LIKE 'PG-%'");
-            stmt.executeUpdate("DELETE FROM recruitment_drives WHERE id LIKE 'PG-%'");
-            stmt.executeUpdate("DELETE FROM companies WHERE id LIKE 'PG-%'");
-            stmt.executeUpdate("DELETE FROM students WHERE id LIKE 'PG-%'");
-        } catch (Exception ignored) {
-        }
+        com.hireflow.testsupport.CoreTestDatabase.cleanCurrentClass();
     }
 
     private void seedBaseEntities() {

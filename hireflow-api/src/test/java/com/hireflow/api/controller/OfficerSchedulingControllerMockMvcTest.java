@@ -46,6 +46,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @DisplayName("OfficerSchedulingControllerMockMvcTest - Secure REST Scheduling Preview, Publication, and Retrieval")
 class OfficerSchedulingControllerMockMvcTest {
+    @org.springframework.beans.factory.annotation.Autowired
+    private javax.sql.DataSource cleanupDataSource;
+
 
     @Autowired
     private MockMvc mockMvc;
@@ -176,20 +179,9 @@ class OfficerSchedulingControllerMockMvcTest {
     }
 
     private void cleanDatabase() {
-        try (java.sql.Connection conn = dataSource.getConnection();
-             java.sql.Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate("DELETE FROM interview_sessions WHERE application_id IN (SELECT id FROM applications WHERE id LIKE 'APP-MVC-%' OR drive_id = '" + DRV_ID + "')");
-            stmt.executeUpdate("DELETE FROM interview_sessions WHERE id LIKE 'SES-%'");
-            stmt.executeUpdate("DELETE FROM applications WHERE id LIKE 'APP-MVC-%' OR drive_id = '" + DRV_ID + "'");
-            stmt.executeUpdate("DELETE FROM interviewers WHERE id LIKE 'INT-MVC-%'");
-            stmt.executeUpdate("DELETE FROM rooms WHERE id LIKE 'RM-MVC-%'");
-            stmt.executeUpdate("DELETE FROM recruitment_drives WHERE id LIKE 'DRV-MVC-%'");
-            stmt.executeUpdate("DELETE FROM companies WHERE id LIKE 'CMP-MVC-%'");
-            stmt.executeUpdate("DELETE FROM user_accounts WHERE username IN ('officer_claire', 'officer_other', 'student_diana')");
-            stmt.executeUpdate("DELETE FROM students WHERE id LIKE 'STU-MVC-%'");
-        } catch (Exception e) {
-            System.err.println("cleanDatabase error: " + e.getMessage());
-        }
+        com.hireflow.api.testsupport.SafeTestDatabase.clean(cleanupDataSource,
+            new String[]{"CMP-MVC-SCH", "DRV-MVC-SCH", "STU-MVC-SCH1", "STU-MVC-SCH2", "APP-MVC-SCH1", "APP-MVC-SCH2", "INT-MVC-SCH1", "RM-MVC-SCH1", "DRV-NONEXISTENT", "SES-1", "SES-PUB-01", "SES-PUB-02", "STU-MVC-EXT", "APP-MVC-EXT", "SES-MVC-EXT"},
+            new String[]{"officer_claire", "officer_other", "student_diana"});
     }
 
     @Test
@@ -225,7 +217,7 @@ class OfficerSchedulingControllerMockMvcTest {
                 .andExpect(jsonPath("$.expiresAt", notNullValue()));
 
         // Crucial invariant: zero database mutation during preview!
-        assertEquals(0, sessionRepository.count(), "Preview must NOT insert any interview sessions.");
+        assertEquals(0, fixtureSessionCount(), "Preview must NOT insert any interview sessions.");
         assertEquals(ApplicationStatus.SHORTLISTED, applicationRepository.findById(APP_1_ID).get().getStatus());
         assertEquals(ApplicationStatus.SHORTLISTED, applicationRepository.findById(APP_2_ID).get().getStatus());
     }
@@ -370,7 +362,7 @@ class OfficerSchedulingControllerMockMvcTest {
                 .andExpect(jsonPath("$.publishedSessions", hasSize(2)));
 
         // 3. Verify PostgreSQL persistence
-        assertEquals(2, sessionRepository.count());
+        assertEquals(2, fixtureSessionCount());
         assertEquals(ApplicationStatus.SCHEDULED, applicationRepository.findById(APP_1_ID).get().getStatus());
         assertEquals(ApplicationStatus.SCHEDULED, applicationRepository.findById(APP_2_ID).get().getStatus());
     }
@@ -604,7 +596,7 @@ class OfficerSchedulingControllerMockMvcTest {
                 .andExpect(jsonPath("$.publishedSessions", hasSize(1)));
 
         // 4. Verify DB state: 1 new session added (total 2 with the external one)
-        assertEquals(2, sessionRepository.count());
+        assertEquals(2, fixtureSessionCount());
         assertEquals(ApplicationStatus.SCHEDULED, applicationRepository.findById(APP_1_ID).get().getStatus());
         assertEquals(ApplicationStatus.SHORTLISTED, applicationRepository.findById(APP_2_ID).get().getStatus());
     }
@@ -653,7 +645,7 @@ class OfficerSchedulingControllerMockMvcTest {
                 .andExpect(jsonPath("$.conflictsCount", is(1)))
                 .andExpect(jsonPath("$.recoveryInstructions", containsString("Zero appointments confirmed")));
 
-        assertEquals(0, sessionRepository.count());
+        assertEquals(0, fixtureSessionCount());
     }
 
     @Test
@@ -700,5 +692,11 @@ class OfficerSchedulingControllerMockMvcTest {
         assertEquals("[REDACTED_PREVIEW_TOKEN]", SchedulingPreviewCacheService.maskToken(""));
         assertEquals("PREV-ABC****", SchedulingPreviewCacheService.maskToken("PREV-ABCDEF12"));
         assertEquals("PREV-123****", SchedulingPreviewCacheService.maskToken("PREV-1234567890"));
+    }
+    /** Count only appointments owned by this class's drives; preserve other runs. */
+    private long fixtureSessionCount() {
+        return sessionRepository.findAll().stream().filter(session ->
+            applicationRepository.findById(session.getApplicationId())
+                .map(app -> java.util.Set.of(DRV_ID).contains(app.getDriveId())).orElse(false)).count();
     }
 }

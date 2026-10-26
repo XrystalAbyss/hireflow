@@ -46,6 +46,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 class PostgresAuthenticationIntegrationTest {
+    @org.springframework.beans.factory.annotation.Autowired
+    private javax.sql.DataSource cleanupDataSource;
+
 
     @Autowired
     private MockMvc mockMvc;
@@ -117,13 +120,9 @@ class PostgresAuthenticationIntegrationTest {
 
     @AfterEach
     void cleanTestData() {
-        try {
-            userAccountRepository.findByUsername(TEST_STUDENT_USER).ifPresent(acc -> userAccountRepository.deleteById(acc.getId()));
-            userAccountRepository.findByUsername(TEST_OFFICER_USER).ifPresent(acc -> userAccountRepository.deleteById(acc.getId()));
-            userAccountRepository.findByUsername("disabled_user_4b").ifPresent(acc -> userAccountRepository.deleteById(acc.getId()));
-            studentRepository.deleteById(TEST_STUDENT_ID);
-        } catch (Exception ignored) {
-        }
+        com.hireflow.api.testsupport.SafeTestDatabase.clean(cleanupDataSource,
+            new String[]{"STU-SEC-4B-001"},
+            new String[]{"disabled_user_4b", "test_student_4b", "test_officer_4b"});
         bruteForceThrottler.clear();
     }
 

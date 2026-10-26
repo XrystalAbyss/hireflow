@@ -45,6 +45,9 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @DisplayName("SchedulingConcurrencyAndIntegrityPostgresTest - PostgreSQL Lock Ordering, GiST Constraints, Anti-Replay & Rollback Safety")
 class SchedulingConcurrencyAndIntegrityPostgresTest {
+    @org.springframework.beans.factory.annotation.Autowired
+    private javax.sql.DataSource cleanupDataSource;
+
 
     @Autowired
     private InterviewService interviewService;
@@ -131,16 +134,9 @@ class SchedulingConcurrencyAndIntegrityPostgresTest {
     }
 
     private void cleanTestData() {
-        try (Connection conn = dataSource.getConnection();
-             Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate("DELETE FROM interview_sessions WHERE id LIKE 'SES-%'");
-            stmt.executeUpdate("DELETE FROM applications WHERE drive_id IN ('" + DRV_ID + "', 'DRV-PG-SCH2') OR id LIKE 'APP-PG-%'");
-            stmt.executeUpdate("DELETE FROM interviewers WHERE id IN ('" + INT_1_ID + "', 'INT-PG-ALT', 'INT-PG-SCH2')");
-            stmt.executeUpdate("DELETE FROM rooms WHERE id IN ('" + ROOM_1_ID + "', 'RM-PG-SCH2')");
-            stmt.executeUpdate("DELETE FROM recruitment_drives WHERE id IN ('" + DRV_ID + "', 'DRV-PG-SCH2')");
-            stmt.executeUpdate("DELETE FROM companies WHERE id IN ('" + CMP_ID + "', 'CMP-PG-SCH2')");
-            stmt.executeUpdate("DELETE FROM students WHERE id IN ('" + STU_1_ID + "', '" + STU_2_ID + "', 'STU-PG-SCH3')");
-        } catch (Exception ignored) {}
+        com.hireflow.api.testsupport.SafeTestDatabase.clean(cleanupDataSource,
+            new String[]{"CMP-PG-SCH", "DRV-PG-SCH", "STU-PG-SCH1", "STU-PG-SCH2", "APP-PG-SCH1", "APP-PG-SCH2", "INT-PG-SCH1", "RM-PG-SCH1", "DRV-PG-SCH2", "INT-PG-ALT", "INT-PG-SCH2", "RM-PG-SCH2", "CMP-PG-SCH2", "STU-PG-SCH3", "SES-CONC-1", "SES-CONC-RM1", "SES-CONC-RM2", "SES-LOCK-", "SES-STALE-01", "SES-EVT-01", "SES-GIST-INT1", "SES-GIST-INT2", "SES-GIST-RM1", "SES-GIST-RM2", "APP-PG-DRV2", "SES-GIST-STU1", "SES-GIST-STU2", "SES-BND-1", "SES-BND-2", "SES-CHK-INV", "SES-PARTIAL-1", "SES-PARTIAL-2", "SES-PERSIST-1"},
+            new String[]{});
     }
 
     @Test
@@ -169,7 +165,7 @@ class SchedulingConcurrencyAndIntegrityPostgresTest {
         assertEquals(0, result.getTotalUnscheduled());
 
         // Zero DB changes
-        assertEquals(0, sessionRepository.count(), "Zero sessions inserted during preview generation.");
+        assertEquals(0, fixtureSessionCount(), "Zero sessions inserted during preview generation.");
         assertEquals(ApplicationStatus.SHORTLISTED, applicationRepository.findById(APP_1_ID).get().getStatus());
         assertEquals(ApplicationStatus.SHORTLISTED, applicationRepository.findById(APP_2_ID).get().getStatus());
         assertEquals(0, recordedEvents.size(), "Zero events broadcast during preview.");
@@ -291,7 +287,7 @@ class SchedulingConcurrencyAndIntegrityPostgresTest {
 
         assertEquals(1, totalPublished, "Exactly one appointment must be published in the contested room.");
         assertEquals(1, totalConflicts, "The overlapping appointment must be safely rejected due to room contention.");
-        assertEquals(1, sessionRepository.count(), "Database must persist exactly one session.");
+        assertEquals(1, fixtureSessionCount(), "Database must persist exactly one session.");
     }
 
     @Test
@@ -347,7 +343,7 @@ class SchedulingConcurrencyAndIntegrityPostgresTest {
         assertEquals(0, result.publishedCount(), "No session should be published for non-SHORTLISTED application.");
         assertEquals(1, result.conflictRejections().size(), "Stale application status must produce conflict rejection.");
         assertTrue(result.conflictRejections().get(0).contains("expected SHORTLISTED"));
-        assertEquals(0, sessionRepository.count());
+        assertEquals(0, fixtureSessionCount());
     }
 
     @Test
@@ -507,7 +503,7 @@ class SchedulingConcurrencyAndIntegrityPostgresTest {
         // Should succeed without PostgreSQL GiST exclusion violation because interval is [) (half-open)
         assertDoesNotThrow(() -> sessionRepository.add(session2),
                 "PostgreSQL half-open tsrange [) must allow boundary-touching appointments without conflict.");
-        assertEquals(2, sessionRepository.count());
+        assertEquals(2, fixtureSessionCount());
     }
 
     @Test
@@ -559,7 +555,7 @@ class SchedulingConcurrencyAndIntegrityPostgresTest {
         assertEquals("SES-PARTIAL-1", result.publishedSessions().get(0).getId());
 
         // Database state verification
-        assertEquals(1, sessionRepository.count(), "Committed session must persist in database.");
+        assertEquals(1, fixtureSessionCount(), "Committed session must persist in database.");
         assertTrue(sessionRepository.existsById("SES-PARTIAL-1"));
         assertFalse(sessionRepository.existsById("SES-PARTIAL-2"));
 
@@ -616,5 +612,11 @@ class SchedulingConcurrencyAndIntegrityPostgresTest {
         List<InterviewSession> sessions = sessionRepository.findByApplicationId(APP_1_ID);
         assertEquals(1, sessions.size());
         assertEquals("SES-PERSIST-1", sessions.get(0).getId());
+    }
+    /** Count only appointments owned by this class's drives; preserve other runs. */
+    private long fixtureSessionCount() {
+        return sessionRepository.findAll().stream().filter(session ->
+            applicationRepository.findById(session.getApplicationId())
+                .map(app -> java.util.Set.of(DRV_ID, "DRV-PG-SCH2").contains(app.getDriveId())).orElse(false)).count();
     }
 }

@@ -37,6 +37,9 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DisplayName("SchedulingWorkflowRealHttpIntegrationTest - Part 14 Real HTTP End-to-End Interview Scheduling Acceptance")
 class SchedulingWorkflowRealHttpIntegrationTest {
+    @org.springframework.beans.factory.annotation.Autowired
+    private javax.sql.DataSource cleanupDataSource;
+
 
     @LocalServerPort
     private int port;
@@ -147,17 +150,9 @@ class SchedulingWorkflowRealHttpIntegrationTest {
     }
 
     private void cleanDatabase() {
-        try (java.sql.Connection conn = dataSource.getConnection();
-             java.sql.Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate("DELETE FROM interview_sessions WHERE id LIKE 'SES-%'");
-            stmt.executeUpdate("DELETE FROM applications WHERE drive_id = '" + DRV_ID + "' OR id LIKE 'APP-E2E-%'");
-            stmt.executeUpdate("DELETE FROM interviewers WHERE id = '" + INT_ID + "'");
-            stmt.executeUpdate("DELETE FROM rooms WHERE id = '" + ROOM_ID + "'");
-            stmt.executeUpdate("DELETE FROM recruitment_drives WHERE id = '" + DRV_ID + "'");
-            stmt.executeUpdate("DELETE FROM companies WHERE id = '" + CMP_ID + "'");
-            stmt.executeUpdate("DELETE FROM user_accounts WHERE username IN ('officer_e2e_sch', 'student_emma', 'student_tom')");
-            stmt.executeUpdate("DELETE FROM students WHERE id IN ('" + STU_1_ID + "', '" + STU_2_ID + "')");
-        } catch (Exception ignored) {}
+        com.hireflow.api.testsupport.SafeTestDatabase.clean(cleanupDataSource,
+            new String[]{"STU-E2E-SCH-1", "STU-E2E-SCH-2", "CMP-E2E-SCH", "DRV-E2E-SCH", "INT-E2E-SCH", "RM-E2E-SCH"},
+            new String[]{"officer_e2e_sch", "student_emma", "student_tom"});
     }
 
     private String getBaseUrl() {
@@ -357,7 +352,7 @@ class SchedulingWorkflowRealHttpIntegrationTest {
         assertEquals(1, (int) JsonPath.read(previewRes.body(), "$.totalScheduled"));
 
         // Step 8: Confirm preview did not change database records
-        assertEquals(0, sessionRepository.count(), "Database must contain ZERO interview sessions after preview.");
+        assertEquals(0, fixtureSessionCount(), "Database must contain ZERO interview sessions after preview.");
         assertEquals("SHORTLISTED", applicationRepository.findById(emmaAppId).get().getStatus().name());
         assertEquals(0, recordedEvents.stream().filter(e -> e.type() == HireFlowEventType.INTERVIEW_SCHEDULED).count(),
                 "Zero INTERVIEW_SCHEDULED events must be broadcast during preview.");
@@ -378,7 +373,7 @@ class SchedulingWorkflowRealHttpIntegrationTest {
         assertNotNull(confirmedSessionId);
 
         // Step 10 & 11: Confirm interview sessions are persisted and application transitioned to SCHEDULED
-        assertEquals(1, sessionRepository.count());
+        assertEquals(1, fixtureSessionCount());
         assertTrue(sessionRepository.existsById(confirmedSessionId));
         assertEquals("SCHEDULED", applicationRepository.findById(emmaAppId).get().getStatus().name());
 
@@ -417,7 +412,7 @@ class SchedulingWorkflowRealHttpIntegrationTest {
                 .build(), HttpResponse.BodyHandlers.ofString());
         assertEquals(409, replayRes.statusCode());
         assertTrue(replayRes.body().contains("already been published"));
-        assertEquals(1, sessionRepository.count(), "Replay must NOT create additional sessions.");
+        assertEquals(1, fixtureSessionCount(), "Replay must NOT create additional sessions.");
 
         // Step 16: Verify events were dispatched after commit
         List<HireFlowEvent> schedEvents = recordedEvents.stream()
@@ -444,5 +439,11 @@ class SchedulingWorkflowRealHttpIntegrationTest {
                 .GET()
                 .build(), HttpResponse.BodyHandlers.ofString());
         assertEquals(404, tomCrossRes.statusCode(), "Cross-student access must return 404 Not Found.");
+    }
+    /** Count only appointments owned by this class's drives; preserve other runs. */
+    private long fixtureSessionCount() {
+        return sessionRepository.findAll().stream().filter(session ->
+            applicationRepository.findById(session.getApplicationId())
+                .map(app -> java.util.Set.of(DRV_ID).contains(app.getDriveId())).orElse(false)).count();
     }
 }

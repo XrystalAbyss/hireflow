@@ -232,23 +232,9 @@ class StudentProcessRestartPersistenceRealHttpTest {
     }
 
     private void cleanTestRecords(ConfigurableApplicationContext ctx) {
-        try {
-            ApplicationRepository appRepo = ctx.getBean(ApplicationRepository.class);
-            StudentRepository stuRepo = ctx.getBean(StudentRepository.class);
-            DriveRepository drvRepo = ctx.getBean(DriveRepository.class);
-            CompanyRepository cmpRepo = ctx.getBean(CompanyRepository.class);
-            UserAccountRepository uaRepo = ctx.getBean(UserAccountRepository.class);
-
-            List<com.hireflow.model.Application> apps = appRepo.findByStudentId(STU_ID);
-            for (com.hireflow.model.Application app : apps) {
-                appRepo.deleteById(app.getId());
-            }
-            uaRepo.findByUsername(USERNAME).ifPresent(acc -> uaRepo.deleteById(acc.getId()));
-            drvRepo.deleteById(DRV_ID);
-            cmpRepo.deleteById(CMP_ID);
-            stuRepo.deleteById(STU_ID);
-        } catch (Exception ignored) {
-        }
+        com.hireflow.api.testsupport.SafeTestDatabase.clean(ctx.getBean(javax.sql.DataSource.class),
+            new String[]{"STU-RESTART-01", "CMP-RESTART-01", "DRV-RESTART-01"},
+            new String[]{"restart_student_user"});
     }
 
     private String extractCookie(HttpResponse<?> response) {

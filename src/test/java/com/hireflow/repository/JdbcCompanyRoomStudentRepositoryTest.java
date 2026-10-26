@@ -54,7 +54,7 @@ public class JdbcCompanyRoomStudentRepositoryTest {
         }
 
         String url = System.getenv().getOrDefault("HIREFLOW_DB_URL",
-                System.getProperty("hireflow.db.url", localProps.getProperty("hireflow.db.url", "jdbc:postgresql://localhost:5432/hireflow_test")));
+                System.getProperty("hireflow.db.url", localProps.getProperty("hireflow.db.url", com.hireflow.testsupport.CoreTestDatabase.url())));
         String user = System.getenv().getOrDefault("HIREFLOW_DB_USER",
                 System.getProperty("hireflow.db.user", localProps.getProperty("hireflow.db.user", "hireflow_user")));
         String pass = System.getenv().getOrDefault("HIREFLOW_DB_PASSWORD",
@@ -101,14 +101,7 @@ public class JdbcCompanyRoomStudentRepositoryTest {
     }
 
     private static void cleanTestData() {
-        if (dataSourceProvider == null || dataSourceProvider.isClosed()) return;
-        try (Connection conn = dataSourceProvider.getConnection();
-             Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate("DELETE FROM students WHERE id LIKE 'TEST-%'");
-            stmt.executeUpdate("DELETE FROM rooms WHERE id LIKE 'TEST-%'");
-            stmt.executeUpdate("DELETE FROM companies WHERE id LIKE 'TEST-%'");
-        } catch (Exception ignored) {
-        }
+        com.hireflow.testsupport.CoreTestDatabase.cleanCurrentClass();
     }
 
     // =========================================================================

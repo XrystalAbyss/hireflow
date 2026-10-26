@@ -1,0 +1,44 @@
+# ==============================================================================
+# HireFlow React Production Frontend & Static Proxy Dockerfile
+# Stage 1: Optimized Vite bundle generation
+# Stage 2: Minimal Caddy web server with automated TLS & SPA fallback
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Stage 1: Build Frontend Assets
+# ------------------------------------------------------------------------------
+FROM node:22-alpine AS builder
+
+WORKDIR /build
+
+# Copy lockfile and package descriptor
+COPY hireflow-app/package.json hireflow-app/package-lock.json ./
+
+# Clean reproducible dependency install
+RUN npm ci
+
+# Copy frontend source
+COPY hireflow-app/ ./
+
+# Production build: sets VITE_HIREFLOW_MODE="" and strips dev workshops
+ENV NODE_ENV=production
+RUN npm run build
+
+# ------------------------------------------------------------------------------
+# Stage 2: Caddy Static Server & Reverse Proxy
+# ------------------------------------------------------------------------------
+FROM caddy:2.9-alpine AS runner
+
+# Copy built distribution files to web root
+COPY --from=builder /build/dist /srv/frontend
+
+# Copy Caddy reverse proxy configuration
+COPY infra/production/Caddyfile /etc/caddy/Caddyfile
+
+# Expose standard HTTP/HTTPS ports
+EXPOSE 80 443
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD wget -qO- http://localhost:80/ || exit 1
+
+CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]

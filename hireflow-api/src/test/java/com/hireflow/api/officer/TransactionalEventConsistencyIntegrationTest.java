@@ -34,6 +34,9 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @DisplayName("TransactionalEventConsistencyIntegrationTest - PostgreSQL Commit and Event Lifecycle Integrity")
 class TransactionalEventConsistencyIntegrationTest {
+    @org.springframework.beans.factory.annotation.Autowired
+    private javax.sql.DataSource cleanupDataSource;
+
 
     @Autowired
     private ApplicationService applicationService;
@@ -92,15 +95,9 @@ class TransactionalEventConsistencyIntegrationTest {
     }
 
     private void cleanTestData() {
-        try {
-            applicationRepository.findByDriveId(DRV_ID).forEach(a -> applicationRepository.deleteById(a.getId()));
-            studentRepository.deleteById(STU_ID);
-            studentRepository.deleteById("STU-EVT-02");
-            studentRepository.deleteById("STU-EVT-03");
-            driveRepository.deleteById(DRV_ID);
-            companyRepository.deleteById(CMP_ID);
-        } catch (Exception ignored) {
-        }
+        com.hireflow.api.testsupport.SafeTestDatabase.clean(cleanupDataSource,
+            new String[]{"CMP-EVT-01", "DRV-EVT-01", "STU-EVT-01", "APP-EVT-01", "STU-EVT-02", "STU-EVT-03", "APP-EVT-02", "APP-EVT-03"},
+            new String[]{});
     }
 
     @Test

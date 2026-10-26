@@ -51,11 +51,14 @@ class WebContextListenerTest {
     @Test
     @DisplayName("safety: failing PostgreSQL connection in JDBC_DEV throws IllegalStateException and NEVER silently falls back to IN_MEMORY")
     void testPostgreSqlStartupFailureDoesNotSilentlyFallback() {
-        // Set an unreachable DB URL to force connection failure
-        System.setProperty("hireflow.db.url", "jdbc:postgresql://127.0.0.1:59999/nonexistent_hireflow_db");
-        System.setProperty("hireflow.db.pool.connection-timeout-ms", "1000");
-
-        try {
+        // Exercise a genuine authentication failure only on the isolated endpoint.
+        var failedConfig = com.hireflow.db.DatabaseConfig.builder()
+            .mode(com.hireflow.db.DatabaseMode.JDBC_DEV)
+            .jdbcUrl(com.hireflow.testsupport.CoreTestDatabase.url())
+            .username("hireflow_cap8_app").password("intentionally-invalid-core-test-password")
+            .connectionTimeoutMs(1000).build();
+        try (var configLoader = mockStatic(com.hireflow.db.DatabaseConfig.class, CALLS_REAL_METHODS)) {
+            configLoader.when(com.hireflow.db.DatabaseConfig::load).thenReturn(failedConfig);
             WebContextListener listener = new WebContextListener();
             ServletContextEvent event = mock(ServletContextEvent.class);
             ServletContext sc = mock(ServletContext.class);
@@ -71,9 +74,6 @@ class WebContextListenerTest {
             assertTrue(ex.getMessage().contains("failed to initialize database context"),
                     "Exception message must clearly report database failure: " + ex.getMessage());
             verify(sc, never()).setAttribute(eq(WebContextListener.APP_CONTEXT_ATTR), any());
-        } finally {
-            System.clearProperty("hireflow.db.url");
-            System.clearProperty("hireflow.db.pool.connection-timeout-ms");
         }
     }
 }

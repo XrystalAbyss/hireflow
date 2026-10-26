@@ -36,6 +36,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 class OfficerPostgresConcurrencyAndIntegrityIntegrationTest {
+    @org.springframework.beans.factory.annotation.Autowired
+    private javax.sql.DataSource cleanupDataSource;
+
 
     @Autowired
     private CompanyService companyService;
@@ -108,27 +111,9 @@ class OfficerPostgresConcurrencyAndIntegrityIntegrationTest {
     }
 
     private void cleanTestData() {
-        try {
-            applicationRepository.findByDriveId(DRV_ID).forEach(a -> applicationRepository.deleteById(a.getId()));
-            applicationRepository.findByDriveId("DRV-PG-02").forEach(a -> applicationRepository.deleteById(a.getId()));
-            applicationRepository.findByStudentId(STU_ID_1).forEach(a -> applicationRepository.deleteById(a.getId()));
-            applicationRepository.findByStudentId(STU_ID_2).forEach(a -> applicationRepository.deleteById(a.getId()));
-            applicationRepository.deleteById(APP_ID);
-            applicationRepository.deleteById("APP-PG-02");
-            interviewerRepository.findByCompanyId(CMP_ID).forEach(i -> interviewerRepository.deleteById(i.getId()));
-            interviewerRepository.findByCompanyId("CMP-PG-02").forEach(i -> interviewerRepository.deleteById(i.getId()));
-            interviewerRepository.deleteById(INT_ID);
-            interviewerRepository.deleteById("INT-PG-02");
-            roomRepository.deleteById(ROOM_ID);
-            roomRepository.deleteById("RM-PG-02");
-            driveRepository.deleteById(DRV_ID);
-            driveRepository.deleteById("DRV-PG-02");
-            companyRepository.deleteById(CMP_ID);
-            companyRepository.deleteById("CMP-PG-02");
-            companyRepository.findByName("Titan Cybernetics Ltd").ifPresent(c -> companyRepository.deleteById(c.getId()));
-            studentRepository.deleteById(STU_ID_1);
-            studentRepository.deleteById(STU_ID_2);
-        } catch (Exception ignored) {}
+        com.hireflow.api.testsupport.SafeTestDatabase.clean(cleanupDataSource,
+            new String[]{"CMP-PG-01", "DRV-PG-01", "STU-PG-01", "STU-PG-02", "APP-PG-01", "INT-PG-01", "RM-PG-01", "DRV-PG-02", "APP-PG-02", "CMP-PG-02", "INT-PG-02", "RM-PG-02", "APP-PG-SCHED"},
+            new String[]{});
     }
 
     @Test

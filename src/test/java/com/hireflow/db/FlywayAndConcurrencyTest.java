@@ -39,7 +39,7 @@ public class FlywayAndConcurrencyTest {
             }
         }
         DB_URL = System.getenv().getOrDefault("HIREFLOW_DB_URL",
-                System.getProperty("hireflow.db.url", localProps.getProperty("hireflow.db.url", "jdbc:postgresql://localhost:5432/hireflow_test")));
+                System.getProperty("hireflow.db.url", localProps.getProperty("hireflow.db.url", com.hireflow.testsupport.CoreTestDatabase.url())));
         DB_USER = System.getenv().getOrDefault("HIREFLOW_DB_USER",
                 System.getProperty("hireflow.db.user", localProps.getProperty("hireflow.db.user", "hireflow_user")));
         DB_PASS = System.getenv().getOrDefault("HIREFLOW_DB_PASSWORD",
@@ -77,14 +77,19 @@ public class FlywayAndConcurrencyTest {
         // 1. Clean the schema to prove reproducible migration from fresh state
         Flyway flywayClean = Flyway.configure()
                 .dataSource(DB_URL, DB_USER, DB_PASS)
+                .schemas(com.hireflow.testsupport.CoreTestDatabase.schema())
+                .defaultSchema(com.hireflow.testsupport.CoreTestDatabase.schema())
                 .cleanDisabled(false)
                 .locations("classpath:db/migration")
                 .load();
+        com.hireflow.testsupport.CoreTestDatabase.verifyScope();
         flywayClean.clean();
 
         // 2. Execute Flyway migration
         Flyway flyway = Flyway.configure()
                 .dataSource(DB_URL, DB_USER, DB_PASS)
+                .schemas(com.hireflow.testsupport.CoreTestDatabase.schema())
+                .defaultSchema(com.hireflow.testsupport.CoreTestDatabase.schema())
                 .locations("classpath:db/migration")
                 .load();
 

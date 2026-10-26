@@ -47,7 +47,7 @@ public class Stage2FinalAcceptanceTest {
         }
 
         String url = System.getenv().getOrDefault("HIREFLOW_DB_URL",
-                System.getProperty("hireflow.db.url", localProps.getProperty("hireflow.db.url", "jdbc:postgresql://localhost:5432/hireflow_test")));
+                System.getProperty("hireflow.db.url", localProps.getProperty("hireflow.db.url", com.hireflow.testsupport.CoreTestDatabase.url())));
         String user = System.getenv().getOrDefault("HIREFLOW_DB_USER",
                 System.getProperty("hireflow.db.user", localProps.getProperty("hireflow.db.user", "hireflow_user")));
         String pass = System.getenv().getOrDefault("HIREFLOW_DB_PASSWORD",

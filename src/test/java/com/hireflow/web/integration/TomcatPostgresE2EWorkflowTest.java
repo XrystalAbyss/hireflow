@@ -50,7 +50,7 @@ class TomcatPostgresE2EWorkflowTest {
             }
         }
         DB_URL = System.getenv().getOrDefault("HIREFLOW_DB_URL",
-                System.getProperty("hireflow.db.url", localProps.getProperty("hireflow.db.url", "jdbc:postgresql://localhost:5432/hireflow_test")));
+                System.getProperty("hireflow.db.url", localProps.getProperty("hireflow.db.url", com.hireflow.testsupport.CoreTestDatabase.url())));
         DB_USER = System.getenv().getOrDefault("HIREFLOW_DB_USER",
                 System.getProperty("hireflow.db.user", localProps.getProperty("hireflow.db.user", "hireflow_user")));
         DB_PASS = System.getenv().getOrDefault("HIREFLOW_DB_PASSWORD",
@@ -100,19 +100,7 @@ class TomcatPostgresE2EWorkflowTest {
     }
 
     private static void cleanAllE2eRecords() {
-        if (!dbAvailable) return;
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
-             Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate("DELETE FROM interview_sessions WHERE id LIKE 'E2E-%'");
-            stmt.executeUpdate("DELETE FROM applications WHERE id LIKE 'E2E-%'");
-            stmt.executeUpdate("DELETE FROM interviewers WHERE id LIKE 'E2E-%'");
-            stmt.executeUpdate("DELETE FROM rooms WHERE id LIKE 'E2E-%'");
-            stmt.executeUpdate("DELETE FROM recruitment_drives WHERE id LIKE 'E2E-%'");
-            stmt.executeUpdate("DELETE FROM companies WHERE id LIKE 'E2E-%'");
-            stmt.executeUpdate("DELETE FROM user_accounts WHERE username LIKE 'e2e.%'");
-            stmt.executeUpdate("DELETE FROM students WHERE id LIKE 'E2E-%'");
-        } catch (Exception ignored) {
-        }
+        com.hireflow.testsupport.CoreTestDatabase.cleanCurrentClass();
     }
 
     private static String extractCsrfToken(String html) {

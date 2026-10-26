@@ -42,6 +42,9 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class SessionFixationAndRevocationRealHttpIntegrationTest {
+    @org.springframework.beans.factory.annotation.Autowired
+    private javax.sql.DataSource cleanupDataSource;
+
 
     @LocalServerPort
     private int port;
@@ -134,13 +137,9 @@ class SessionFixationAndRevocationRealHttpIntegrationTest {
     }
 
     private void cleanDatabase() {
-        try {
-            userAccountRepository.findByUsername(STUDENT_USER).ifPresent(acc -> userAccountRepository.deleteById(acc.getId()));
-            userAccountRepository.findByUsername(OFFICER_USER).ifPresent(acc -> userAccountRepository.deleteById(acc.getId()));
-            userAccountRepository.findByUsername(ADMIN_USER).ifPresent(acc -> userAccountRepository.deleteById(acc.getId()));
-            studentRepository.deleteById(STUDENT_ID);
-        } catch (Exception ignored) {
-        }
+        com.hireflow.api.testsupport.SafeTestDatabase.clean(cleanupDataSource,
+            new String[]{"STU-REAL-4B1"},
+            new String[]{"real_stu_4b1", "real_off_4b1", "real_adm_4b1"});
     }
 
     private String getBaseUrl() {

@@ -31,6 +31,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class OfficerWorkflowRealHttpIntegrationTest {
+    @org.springframework.beans.factory.annotation.Autowired
+    private javax.sql.DataSource cleanupDataSource;
+
 
     @LocalServerPort
     private int port;
@@ -124,24 +127,9 @@ class OfficerWorkflowRealHttpIntegrationTest {
     }
 
     private void cleanDatabase() {
-        try {
-            applicationRepository.findByStudentId(STU_1_ID).forEach(a -> applicationRepository.deleteById(a.getId()));
-            applicationRepository.findByStudentId(STU_2_ID).forEach(a -> applicationRepository.deleteById(a.getId()));
-            applicationRepository.findByDriveId("DRV-E2E-99").forEach(a -> applicationRepository.deleteById(a.getId()));
-
-            interviewerRepository.deleteById("INT-E2E-99");
-            roomRepository.deleteById("RM-E2E-99");
-            driveRepository.deleteById("DRV-E2E-99");
-            companyRepository.deleteById("CMP-E2E-99");
-
-            userAccountRepository.findByUsername("officer_e2e").ifPresent(a -> userAccountRepository.deleteById(a.getId()));
-            userAccountRepository.findByUsername("student1_e2e").ifPresent(a -> userAccountRepository.deleteById(a.getId()));
-            userAccountRepository.findByUsername("student2_e2e").ifPresent(a -> userAccountRepository.deleteById(a.getId()));
-
-            studentRepository.deleteById(STU_1_ID);
-            studentRepository.deleteById(STU_2_ID);
-        } catch (Exception ignored) {
-        }
+        com.hireflow.api.testsupport.SafeTestDatabase.clean(cleanupDataSource,
+            new String[]{"STU-E2E-OFF-1", "STU-E2E-OFF-2", "DRV-E2E-99", "INT-E2E-99", "RM-E2E-99", "CMP-E2E-99"},
+            new String[]{"officer_e2e", "student1_e2e", "student2_e2e"});
     }
 
     private String getBaseUrl() {

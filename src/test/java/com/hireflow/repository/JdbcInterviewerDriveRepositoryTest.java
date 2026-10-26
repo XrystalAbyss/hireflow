@@ -56,7 +56,7 @@ public class JdbcInterviewerDriveRepositoryTest {
         }
 
         String url = System.getenv().getOrDefault("HIREFLOW_DB_URL",
-                System.getProperty("hireflow.db.url", localProps.getProperty("hireflow.db.url", "jdbc:postgresql://localhost:5432/hireflow_test")));
+                System.getProperty("hireflow.db.url", localProps.getProperty("hireflow.db.url", com.hireflow.testsupport.CoreTestDatabase.url())));
         String user = System.getenv().getOrDefault("HIREFLOW_DB_USER",
                 System.getProperty("hireflow.db.user", localProps.getProperty("hireflow.db.user", "hireflow_user")));
         String pass = System.getenv().getOrDefault("HIREFLOW_DB_PASSWORD",
@@ -107,21 +107,7 @@ public class JdbcInterviewerDriveRepositoryTest {
     }
 
     private static void cleanTestData() {
-        if (dataSourceProvider == null || dataSourceProvider.isClosed()) return;
-        try (Connection conn = dataSourceProvider.getConnection();
-             Statement stmt = conn.createStatement()) {
-            // Delete dependent test applications first
-            stmt.executeUpdate("DELETE FROM applications WHERE id LIKE 'TEST-%'");
-            // Delete test interview sessions and availabilities if any
-            stmt.executeUpdate("DELETE FROM interview_sessions WHERE id LIKE 'TEST-%'");
-            stmt.executeUpdate("DELETE FROM interviewer_availabilities WHERE id LIKE 'TEST-%'");
-            // Delete test interviewers and drives
-            stmt.executeUpdate("DELETE FROM interviewers WHERE id LIKE 'TEST-%'");
-            stmt.executeUpdate("DELETE FROM drive_eligible_branches WHERE drive_id LIKE 'TEST-%'");
-            stmt.executeUpdate("DELETE FROM recruitment_drives WHERE id LIKE 'TEST-%'");
-            stmt.executeUpdate("DELETE FROM companies WHERE id LIKE 'TEST-CMP-DRV-%'");
-        } catch (Exception ignored) {
-        }
+        com.hireflow.testsupport.CoreTestDatabase.cleanCurrentClass();
     }
 
     // =========================================================================
@@ -499,8 +485,8 @@ public class JdbcInterviewerDriveRepositoryTest {
             // Instantiate repository with custom config pointing to non-test URL
             DatabaseConfig devConfig = DatabaseConfig.builder()
                     .mode(DatabaseMode.JDBC_DEV)
-                    .jdbcUrl("jdbc:postgresql://localhost:5432/hireflow_dev")
-                    .username("hireflow_user")
+                    .jdbcUrl(com.hireflow.testsupport.CoreTestDatabase.url())
+                    .username("hireflow_cap8_app")
                     .password(testConfig.getPassword())
                     .build();
 

@@ -59,7 +59,7 @@ public class DatabaseInfrastructureTest {
         }
 
         String url = System.getenv().getOrDefault("HIREFLOW_DB_URL",
-                System.getProperty("hireflow.db.url", localProps.getProperty("hireflow.db.url", "jdbc:postgresql://localhost:5432/hireflow_test")));
+                System.getProperty("hireflow.db.url", localProps.getProperty("hireflow.db.url", com.hireflow.testsupport.CoreTestDatabase.url())));
         String user = System.getenv().getOrDefault("HIREFLOW_DB_USER",
                 System.getProperty("hireflow.db.user", localProps.getProperty("hireflow.db.user", "hireflow_user")));
         String pass = System.getenv().getOrDefault("HIREFLOW_DB_PASSWORD",
@@ -114,8 +114,8 @@ public class DatabaseInfrastructureTest {
     @DisplayName("2. Unavailable database handling with clean failure and bounded timeout")
     void testUnavailableDatabaseHandling() {
         DatabaseConfig invalidConfig = DatabaseConfig.builder()
-                .jdbcUrl("jdbc:postgresql://localhost:59999/hireflow_test")
-                .username("hireflow_user")
+                .jdbcUrl(com.hireflow.testsupport.CoreTestDatabase.url())
+                .username("hireflow_cap8_app")
                 .password("fake_password")
                 .connectionTimeoutMs(1000)
                 .build();

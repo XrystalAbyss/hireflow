@@ -50,7 +50,7 @@ public class JdbcPersistenceIntegrationTest {
         }
 
         String url = System.getenv().getOrDefault("HIREFLOW_DB_URL",
-                System.getProperty("hireflow.db.url", localProps.getProperty("hireflow.db.url", "jdbc:postgresql://localhost:5432/hireflow_test")));
+                System.getProperty("hireflow.db.url", localProps.getProperty("hireflow.db.url", com.hireflow.testsupport.CoreTestDatabase.url())));
         String user = System.getenv().getOrDefault("HIREFLOW_DB_USER",
                 System.getProperty("hireflow.db.user", localProps.getProperty("hireflow.db.user", "hireflow_user")));
         String pass = System.getenv().getOrDefault("HIREFLOW_DB_PASSWORD",
@@ -89,20 +89,7 @@ public class JdbcPersistenceIntegrationTest {
     }
 
     private static void cleanTestPrefixData() {
-        try (com.hireflow.db.DataSourceProvider dsp = new com.hireflow.db.DataSourceProvider(testConfig);
-             Connection conn = dsp.getConnection();
-             Statement stmt = conn.createStatement()) {
-            conn.setAutoCommit(false);
-            stmt.executeUpdate("DELETE FROM interview_sessions WHERE id LIKE 'TEST-%'");
-            stmt.executeUpdate("DELETE FROM applications WHERE id LIKE 'TEST-%'");
-            stmt.executeUpdate("DELETE FROM recruitment_drives WHERE id LIKE 'TEST-%'");
-            stmt.executeUpdate("DELETE FROM interviewers WHERE id LIKE 'TEST-%'");
-            stmt.executeUpdate("DELETE FROM companies WHERE id LIKE 'TEST-%'");
-            stmt.executeUpdate("DELETE FROM rooms WHERE id LIKE 'TEST-%'");
-            stmt.executeUpdate("DELETE FROM students WHERE id LIKE 'TEST-%'");
-            conn.commit();
-        } catch (Exception ignored) {
-        }
+        com.hireflow.testsupport.CoreTestDatabase.cleanCurrentClass();
     }
 
     @Test

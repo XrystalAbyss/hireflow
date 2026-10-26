@@ -43,6 +43,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 class StudentControllerMockMvcTest {
+    @org.springframework.beans.factory.annotation.Autowired
+    private javax.sql.DataSource cleanupDataSource;
+
 
     @Autowired
     private MockMvc mockMvc;
@@ -174,25 +177,9 @@ class StudentControllerMockMvcTest {
 
     @AfterEach
     void cleanAllTestData() {
-        try {
-            applicationRepository.findByStudentId(STU_ID_1).forEach(a -> applicationRepository.deleteById(a.getId()));
-            applicationRepository.findByStudentId(STU_ID_2).forEach(a -> applicationRepository.deleteById(a.getId()));
-
-            driveRepository.deleteById(DRV_OPEN_CSE);
-            driveRepository.deleteById(DRV_OPEN_MECH);
-            driveRepository.deleteById(DRV_CLOSED);
-            driveRepository.deleteById(DRV_EXPIRED);
-
-            companyRepository.deleteById(CMP_ID_1);
-
-            userAccountRepository.findByUsername("alice_mock").ifPresent(a -> userAccountRepository.deleteById(a.getId()));
-            userAccountRepository.findByUsername("bob_mock").ifPresent(a -> userAccountRepository.deleteById(a.getId()));
-            userAccountRepository.findByUsername("officer_mock").ifPresent(a -> userAccountRepository.deleteById(a.getId()));
-
-            studentRepository.deleteById(STU_ID_1);
-            studentRepository.deleteById(STU_ID_2);
-        } catch (Exception ignored) {
-        }
+        com.hireflow.api.testsupport.SafeTestDatabase.clean(cleanupDataSource,
+            new String[]{"STU-MOCK-001", "STU-MOCK-002", "CMP-MOCK-001", "DRV-MOCK-001", "DRV-MOCK-002", "DRV-MOCK-003", "DRV-MOCK-004"},
+            new String[]{"alice_mock", "bob_mock", "officer_mock"});
     }
 
     // =========================================================================

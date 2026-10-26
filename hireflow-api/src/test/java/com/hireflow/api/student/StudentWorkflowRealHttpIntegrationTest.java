@@ -52,6 +52,9 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class StudentWorkflowRealHttpIntegrationTest {
+    @org.springframework.beans.factory.annotation.Autowired
+    private javax.sql.DataSource cleanupDataSource;
+
 
     @LocalServerPort
     private int port;
@@ -140,20 +143,9 @@ class StudentWorkflowRealHttpIntegrationTest {
     }
 
     private void cleanDatabase() {
-        try {
-            applicationRepository.findByStudentId(STU_A_ID).forEach(a -> applicationRepository.deleteById(a.getId()));
-            applicationRepository.findByStudentId(STU_B_ID).forEach(a -> applicationRepository.deleteById(a.getId()));
-
-            driveRepository.deleteById(DRV_ID);
-            companyRepository.deleteById(CMP_ID);
-
-            userAccountRepository.findByUsername("student_a_e2e").ifPresent(a -> userAccountRepository.deleteById(a.getId()));
-            userAccountRepository.findByUsername("student_b_e2e").ifPresent(a -> userAccountRepository.deleteById(a.getId()));
-
-            studentRepository.deleteById(STU_A_ID);
-            studentRepository.deleteById(STU_B_ID);
-        } catch (Exception ignored) {
-        }
+        com.hireflow.api.testsupport.SafeTestDatabase.clean(cleanupDataSource,
+            new String[]{"STU-E2E-A01", "STU-E2E-B02", "CMP-E2E-001", "DRV-E2E-001"},
+            new String[]{"student_a_e2e", "student_b_e2e"});
     }
 
     private String getBaseUrl() {

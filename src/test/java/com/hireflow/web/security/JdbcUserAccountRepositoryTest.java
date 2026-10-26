@@ -48,7 +48,7 @@ class JdbcUserAccountRepositoryTest {
         }
 
         String url = System.getenv().getOrDefault("HIREFLOW_DB_URL",
-                System.getProperty("hireflow.db.url", localProps.getProperty("hireflow.db.url", "jdbc:postgresql://localhost:5432/hireflow_test")));
+                System.getProperty("hireflow.db.url", localProps.getProperty("hireflow.db.url", com.hireflow.testsupport.CoreTestDatabase.url())));
         String user = System.getenv().getOrDefault("HIREFLOW_DB_USER",
                 System.getProperty("hireflow.db.user", localProps.getProperty("hireflow.db.user", "hireflow_user")));
         String pass = System.getenv().getOrDefault("HIREFLOW_DB_PASSWORD",
@@ -103,16 +103,7 @@ class JdbcUserAccountRepositoryTest {
     }
 
     private void cleanTestData() {
-        try (Connection conn = dataSourceProvider.getDataSource().getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement("DELETE FROM user_accounts WHERE username LIKE 'test-%'")) {
-                ps.executeUpdate();
-            }
-            try (PreparedStatement ps = conn.prepareStatement("DELETE FROM students WHERE id = ?")) {
-                ps.setString(1, TEST_STUDENT_ID);
-                ps.executeUpdate();
-            }
-        } catch (Exception ignored) {
-        }
+        com.hireflow.testsupport.CoreTestDatabase.cleanCurrentClass();
     }
 
     @Test
