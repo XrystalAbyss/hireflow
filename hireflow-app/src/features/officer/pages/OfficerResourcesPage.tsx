@@ -31,6 +31,14 @@ export function OfficerResourcesPage() {
 
   const [roomModalOpen, setRoomModalOpen] = React.useState(false)
   const [editingRoom, setEditingRoom] = React.useState<OfficerRoomDetailDto | null>(null)
+  const [roomBlockFilter, setRoomBlockFilter] = React.useState<'ALL' | 'K' | 'L' | 'LEGACY'>('ALL')
+
+  const getRoomCategory = (id: string): 'K' | 'L' | 'LEGACY' => {
+    const norm = id.toUpperCase().replace(/^RM-/, '')
+    if (norm.startsWith('K')) return 'K'
+    if (norm.startsWith('L')) return 'L'
+    return 'LEGACY'
+  }
 
   const { data: companiesData } = useOfficerCompanies(0, 100)
   const companies: OfficerCompanyDetailDto[] = companiesData?.content || []
@@ -230,6 +238,43 @@ export function OfficerResourcesPage() {
       {/* TAB 2: ROOMS */}
       {activeTab === 'rooms' && (
         <div className="space-y-4">
+          {/* Block & Facility Category Filters */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold text-muted-foreground mr-1">Campus Wing:</span>
+            <Button
+              variant={roomBlockFilter === 'ALL' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setRoomBlockFilter('ALL')}
+              className="h-7 text-xs px-2.5"
+            >
+              All Facilities ({rooms.length})
+            </Button>
+            <Button
+              variant={roomBlockFilter === 'K' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setRoomBlockFilter('K')}
+              className="h-7 text-xs px-2.5"
+            >
+              K Block Engineering ({rooms.filter((r) => getRoomCategory(r.id) === 'K').length})
+            </Button>
+            <Button
+              variant={roomBlockFilter === 'L' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setRoomBlockFilter('L')}
+              className="h-7 text-xs px-2.5"
+            >
+              L Block Engineering ({rooms.filter((r) => getRoomCategory(r.id) === 'L').length})
+            </Button>
+            <Button
+              variant={roomBlockFilter === 'LEGACY' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setRoomBlockFilter('LEGACY')}
+              className="h-7 text-xs px-2.5"
+            >
+              Preserved / Legacy ({rooms.filter((r) => getRoomCategory(r.id) === 'LEGACY').length})
+            </Button>
+          </div>
+
           <div className="rounded-md border border-border bg-card shadow-xs overflow-hidden">
             {loadingRooms ? (
               <div className="p-8 text-center text-xs text-muted-foreground animate-pulse">
@@ -244,40 +289,63 @@ export function OfficerResourcesPage() {
                 <table className="w-full text-left text-xs border-collapse">
                   <thead className="bg-muted/60 border-b border-border text-muted-foreground font-mono uppercase tracking-wider">
                     <tr>
-                      <th className="py-2.5 px-3.5">Room ID</th>
-                      <th className="py-2.5 px-3.5">Facility Location & Wing</th>
+                      <th className="py-2.5 px-3.5">Room Code</th>
+                      <th className="py-2.5 px-3.5">Campus Wing</th>
+                      <th className="py-2.5 px-3.5">Facility Location & Name</th>
                       <th className="py-2.5 px-3.5 text-center">Seating Capacity</th>
                       <th className="py-2.5 px-3.5 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {rooms.map((r) => (
-                      <tr key={r.id} className="hover:bg-muted/40 transition-colors">
-                        <td className="py-2.5 px-3.5 font-mono text-muted-foreground font-semibold">
-                          {r.id}
-                        </td>
-                        <td className="py-2.5 px-3.5 font-medium text-foreground">
-                          {r.name}
-                        </td>
-                        <td className="py-2.5 px-3.5 text-center font-mono">
-                          <Badge variant="outline" className="text-xs px-2 py-0.5">
-                            {r.capacity} Persons
-                          </Badge>
-                        </td>
-                        <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditRoom(r)}
-                            className="h-7 text-xs px-2 gap-1"
-                            aria-label={`Edit room ${r.name}`}
-                          >
-                            <Edit3 className="h-3 w-3" />
-                            <span>Edit</span>
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
+                    {rooms
+                      .filter((r) => roomBlockFilter === 'ALL' || getRoomCategory(r.id) === roomBlockFilter)
+                      .map((r) => {
+                        const cat = getRoomCategory(r.id)
+                        return (
+                          <tr key={r.id} className="hover:bg-muted/40 transition-colors">
+                            <td className="py-2.5 px-3.5 font-mono text-muted-foreground font-semibold">
+                              {r.id}
+                            </td>
+                            <td className="py-2.5 px-3.5 whitespace-nowrap">
+                              {cat === 'K' && (
+                                <Badge variant="outline" className="font-mono text-[10px] text-academic-teal border-academic-teal/40 bg-academic-teal/5">
+                                  K Block
+                                </Badge>
+                              )}
+                              {cat === 'L' && (
+                                <Badge variant="outline" className="font-mono text-[10px] text-brass-700 dark:text-brass-300 border-brass-600/40 bg-brass-500/5">
+                                  L Block
+                                </Badge>
+                              )}
+                              {cat === 'LEGACY' && (
+                                <Badge variant="outline" className="font-mono text-[10px] text-muted-foreground border-border bg-muted/40">
+                                  Preserved
+                                </Badge>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3.5 font-medium text-foreground">
+                              {r.name}
+                            </td>
+                            <td className="py-2.5 px-3.5 text-center font-mono">
+                              <Badge variant="outline" className="text-xs px-2 py-0.5">
+                                {r.capacity} Persons
+                              </Badge>
+                            </td>
+                            <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditRoom(r)}
+                                className="h-7 text-xs px-2 gap-1"
+                                aria-label={`Edit room ${r.name}`}
+                              >
+                                <Edit3 className="h-3 w-3" />
+                                <span>Edit</span>
+                              </Button>
+                            </td>
+                          </tr>
+                        )
+                      })}
                   </tbody>
                 </table>
               </div>

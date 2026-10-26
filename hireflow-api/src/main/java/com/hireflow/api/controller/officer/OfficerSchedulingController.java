@@ -7,6 +7,7 @@ import com.hireflow.api.service.SchedulingPreviewCacheService;
 import com.hireflow.exception.EntityNotFoundException;
 import com.hireflow.exception.ValidationException;
 import com.hireflow.model.*;
+import com.hireflow.policy.UniversityCampusRoomPolicy;
 import com.hireflow.repository.*;
 import com.hireflow.scheduler.*;
 import com.hireflow.service.InterviewService;
@@ -161,10 +162,16 @@ public class OfficerSchedulingController {
                     .map(String::toUpperCase)
                     .collect(Collectors.toSet());
             candidateRooms = roomRepository.findAll().stream()
-                    .filter(r -> selectedRoomIds.contains(r.getId()))
+                    .filter(r -> selectedRoomIds.contains(r.getId())
+                            || selectedRoomIds.contains(UniversityCampusRoomPolicy.normalizeCode(r.getId())))
                     .toList();
+            for (Room r : candidateRooms) {
+                UniversityCampusRoomPolicy.validateRoomForInterviewAllocation(r);
+            }
         } else {
-            candidateRooms = roomRepository.findAll();
+            candidateRooms = roomRepository.findAll().stream()
+                    .filter(UniversityCampusRoomPolicy::isInterviewEligible)
+                    .toList();
         }
 
         // 3. Existing confirmed sessions pool
@@ -350,6 +357,10 @@ public class OfficerSchedulingController {
         // Reconstruct domain InterviewSession objects exclusively from authoritative server preview
         List<InterviewSession> proposedSessions = new ArrayList<>();
         for (SchedulingPreviewState.ProposedSessionDto dto : preview.proposedSessions()) {
+            Room room = roomRepository.findById(dto.roomId())
+                    .orElseThrow(() -> new EntityNotFoundException("Allocated room '" + dto.roomId() + "' not found."));
+            UniversityCampusRoomPolicy.validateRoomForInterviewAllocation(room);
+
             proposedSessions.add(new InterviewSession(
                     dto.sessionId(),
                     dto.applicationId(),

@@ -508,10 +508,11 @@ class OfficerSchedulingControllerMockMvcTest {
         sessionRepository.add(session);
 
         mockMvc.perform(get("/api/v1/officer/scheduling/published")
+                        .param("driveId", DRV_ID)
                         .with(authentication(officerAuth)))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", containsString("no-store")))
-                .andExpect(jsonPath("$.content", hasSize(greaterThanOrEqualTo(1))))
+                .andExpect(jsonPath("$.content", hasSize(1)))
                 .andExpect(jsonPath("$.content[0].sessionId", is("SES-PUB-01")))
                 .andExpect(jsonPath("$.content[0].applicationId", is(APP_1_ID)))
                 .andExpect(jsonPath("$.content[0].studentName", is("Diana Prince")))

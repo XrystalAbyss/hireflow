@@ -87,11 +87,12 @@ try {
 
     if ($ResetScenario) {
         if ($script:Interactive) {
-            $confirm = Read-Host 'This deletes ONLY DEMO-* scenario records in the isolated database. Type RESET to continue'
+            $confirm = Read-Host 'This deletes ONLY explicitly owned scenario records in the isolated database. Type RESET to continue'
             if ($confirm -cne 'RESET') { Write-Host 'Reset cancelled.'; exit 0 }
         }
+        Invoke-HireFlowSqlFile "$script:Root\infra\cap8-integration\university-season-reset.sql"
         Invoke-HireFlowSqlFile "$script:Root\infra\cap8-integration\demo-scenario-reset.sql"
-        Write-Host '[PASS] Demo scenario reset (demo account and demo records removed)' -ForegroundColor Green
+        Write-Host '[PASS] Demo and university scenario reset (exact manifest records removed, VIVA22 preserved)' -ForegroundColor Green
         if ($SkipAccounts -and $SkipDataset) { exit 0 }
     }
 
@@ -133,7 +134,8 @@ try {
 
     if (-not $SkipDataset) {
         Invoke-HireFlowSqlFile "$script:Root\infra\cap8-integration\demo-scenario.sql"
-        Write-Host '[PASS] Fictional demo scenario seeded (idempotent, no duplicates)' -ForegroundColor Green
+        Invoke-HireFlowSqlFile "$script:Root\infra\cap8-integration\university-season-scenario.sql"
+        Write-Host '[PASS] Fictional university recruitment scenario and K/L room inventory seeded (idempotent, no duplicates)' -ForegroundColor Green
     }
 
     # Merge into the existing gitignored credential file so unrelated entries survive.

@@ -44,11 +44,11 @@ ON CONFLICT DO NOTHING;
 
 -- 4. Applications with varied eligibility and shortlisting outcomes -----------
 INSERT INTO applications (id, student_id, drive_id, status, remarks) VALUES
-    ('APP-DEMO-01', 'DEMO-STU-01', 'DRV-DEMO-01', 'SHORTLISTED', 'Strong systems fundamentals; shortlisted for the technical panel.'),
+    ('APP-DEMO-01', 'DEMO-STU-01', 'DRV-DEMO-01', 'SCHEDULED', 'Strong systems fundamentals; scheduled for the technical panel.'),
     ('APP-DEMO-02', 'DEMO-STU-01', 'DRV-DEMO-03', 'SHORTLISTED', 'Shortlisted; awaiting a free interview slot on the analytics panel.'),
-    ('APP-DEMO-03', 'DEMO-STU-02', 'DRV-DEMO-01', 'SHORTLISTED', 'Top-quartile aptitude score; shortlisted for the technical panel.'),
+    ('APP-DEMO-03', 'DEMO-STU-02', 'DRV-DEMO-01', 'SCHEDULED', 'Top-quartile aptitude score; scheduled for the technical panel.'),
     ('APP-DEMO-04', 'DEMO-STU-02', 'DRV-DEMO-03', 'APPLIED', 'Awaiting eligibility review.'),
-    ('APP-DEMO-05', 'DEMO-STU-03', 'DRV-DEMO-02', 'SHORTLISTED', 'Relevant VLSI coursework; shortlisted for the design panel.'),
+    ('APP-DEMO-05', 'DEMO-STU-03', 'DRV-DEMO-02', 'SCHEDULED', 'Relevant VLSI coursework; scheduled for the design panel.'),
     ('APP-DEMO-06', 'DEMO-STU-04', 'DRV-DEMO-03', 'APPLIED', 'Awaiting eligibility review.'),
     ('APP-DEMO-07', 'DEMO-STU-05', 'DRV-DEMO-04', 'INELIGIBLE', 'Does not meet the 8.00 CGPA threshold for this closed drive.')
 ON CONFLICT (id) DO NOTHING;
@@ -76,14 +76,5 @@ INSERT INTO interview_sessions
     ('SES-DEMO-02', 'APP-DEMO-03', 'DEMO-STU-02', 'INT-DEMO-02', 'RM-DEMO-01', TIMESTAMP '2027-03-15 10:00:00', TIMESTAMP '2027-03-15 10:45:00'),
     ('SES-DEMO-03', 'APP-DEMO-05', 'DEMO-STU-03', 'INT-DEMO-03', 'RM-DEMO-02', TIMESTAMP '2027-03-16 09:30:00', TIMESTAMP '2027-03-16 10:15:00')
 ON CONFLICT (id) DO NOTHING;
-
--- Reflect scheduled outcomes for the confirmed appointments.
-UPDATE applications SET status = 'SCHEDULED', updated_at = CURRENT_TIMESTAMP
- WHERE id IN ('APP-DEMO-01', 'APP-DEMO-03', 'APP-DEMO-05') AND status = 'SHORTLISTED';
-
--- Keep one shortlisted candidate permanently awaiting a slot so the scheduling
--- queue is demonstrable. Idempotent: also corrects databases seeded earlier.
-UPDATE applications SET status = 'SHORTLISTED', updated_at = CURRENT_TIMESTAMP
- WHERE id = 'APP-DEMO-02' AND status <> 'SHORTLISTED';
 
 COMMIT;

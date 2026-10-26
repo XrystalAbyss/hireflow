@@ -8,6 +8,7 @@ import com.hireflow.exception.ValidationException;
 import com.hireflow.model.Company;
 import com.hireflow.model.Interviewer;
 import com.hireflow.model.Room;
+import com.hireflow.policy.UniversityCampusRoomPolicy;
 import com.hireflow.repository.CompanyRepository;
 import com.hireflow.repository.InterviewerRepository;
 import com.hireflow.repository.RoomRepository;
@@ -178,6 +179,9 @@ public class OfficerInterviewResourceController {
             throw new ValidationException("Room capacity must be a positive integer.");
         }
 
+        Room testRoom = new Room(normId, createDto.name().trim(), createDto.capacity());
+        UniversityCampusRoomPolicy.validateRoomForInterviewAllocation(testRoom);
+
         Room created = transactionManager.runInTransaction(conn -> {
             if (roomRepository.existsById(normId)) {
                 throw new DuplicateEntityException("Room with ID '" + normId + "' already exists.");
@@ -210,6 +214,9 @@ public class OfficerInterviewResourceController {
         if (updateDto.capacity() <= 0) {
             throw new ValidationException("Room capacity must be a positive integer.");
         }
+
+        Room testRoom = new Room(normId, updateDto.name().trim(), updateDto.capacity());
+        UniversityCampusRoomPolicy.validateRoomForInterviewAllocation(testRoom);
 
         Room updated = transactionManager.runInTransaction(conn -> {
             Room existing = roomRepository.findById(normId)

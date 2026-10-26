@@ -83,7 +83,7 @@ jobs:
         run: ./mvnw -B -f hireflow-api/pom.xml compile -q
 
       - name: Run Core Module Offline Unit Tests
-        run: ./mvnw -B test -Duser.timezone=UTC -Dtest=SessionIdentityRegressionTest,GreedySchedulerTest,EntityValidationTest,CompanyServiceTest,PasswordHasherTest,CsrfTokenManagerTest,BruteForceThrottlerTest,AuthenticationServiceTest
+        run: ./mvnw -B test -Duser.timezone=UTC -Dtest=UniversityCampusRoomPolicyTest,SessionIdentityRegressionTest,GreedySchedulerTest,EntityValidationTest,CompanyServiceTest,PasswordHasherTest,CsrfTokenManagerTest,BruteForceThrottlerTest,AuthenticationServiceTest
 
       - name: Package Spring Boot API artifact (Packaging Smoke Test)
         run: ./mvnw -B -f hireflow-api/pom.xml package -DskipTests -q

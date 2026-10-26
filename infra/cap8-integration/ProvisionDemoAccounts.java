@@ -117,9 +117,7 @@ public final class ProvisionDemoAccounts {
     private static void upsertDemoStudent(Connection conn) throws Exception {
         String sql = "INSERT INTO students (id, name, email, branch, cgpa, graduation_year, active) "
                 + "VALUES (?, ?, ?, ?, ?, ?, TRUE) "
-                + "ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, email = EXCLUDED.email, "
-                + "branch = EXCLUDED.branch, cgpa = EXCLUDED.cgpa, graduation_year = EXCLUDED.graduation_year, "
-                + "active = TRUE, updated_at = CURRENT_TIMESTAMP";
+                + "ON CONFLICT (id) DO NOTHING";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, DEMO_STUDENT_ID);
             ps.setString(2, "Aarav Sharma");
@@ -138,7 +136,7 @@ public final class ProvisionDemoAccounts {
                 + "VALUES (?, ?, ?, ?, ?, ?, TRUE, 0) "
                 + "ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash, "
                 + "role = EXCLUDED.role, student_id = EXCLUDED.student_id, display_name = EXCLUDED.display_name, "
-                + "enabled = TRUE, failed_login_attempts = 0, locked_until = NULL, updated_at = CURRENT_TIMESTAMP";
+                + "updated_at = CURRENT_TIMESTAMP";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, UUID.randomUUID().toString());
             ps.setString(2, username);

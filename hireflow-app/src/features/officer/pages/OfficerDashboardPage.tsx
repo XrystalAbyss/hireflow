@@ -246,7 +246,7 @@ export function OfficerDashboardPage() {
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Other statuses in view:</span>
-                <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
+                <span className="font-mono font-bold text-amber-800 dark:text-amber-300">
                   {Math.max(0, totalApplications - totalShortlisted)}
                 </span>
               </div>
