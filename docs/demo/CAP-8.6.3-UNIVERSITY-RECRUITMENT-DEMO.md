@@ -59,12 +59,12 @@ All CAP-8.6.3 dataset expansion records are isolated under the `U26` namespace t
 
 | Drive ID | Company ID & Name | Job Title | Min CGPA | Eligible Branches | Status | Applicants | Shortlist | Confirmed |
 |---|---|---|---|---|---|---|---|---|
-| `DRV-U26-01` | `CMP-U26-01` CloudScale Technologies | Cloud Software Engineer | 7.50 | CSE, IT, AI/ML | Open | 14 | 4 awaiting | 3 |
-| `DRV-U26-02` | `CMP-U26-02` Apex Financial Analytics | Quantitative Data Analyst | 8.00 | CSE, IT | Open | 14 | 4 awaiting | 3 |
-| `DRV-U26-03` | `CMP-U26-03` CyberShield Infosec | Security & Systems Engineer | 7.00 | CSE, IT, ECE | Open | 14 | 4 awaiting | 3 |
-| `DRV-U26-04` | `CMP-U26-04` NeuralEdge Robotics | Embedded AI Systems Engineer | 7.80 | CSE, ECE, AI/ML | Open | 14 | 4 awaiting | 3 |
-| `DRV-U26-05` | `CMP-U26-05` Helix Semiconductor Systems | VLSI Design Verification | 7.20 | ECE, EEE | Open | 14 | 4 awaiting | 3 |
-| `DRV-U26-06` | `CMP-U26-06` Stratos Consulting Group | Associate Technology Analyst | 6.50 | ALL (CSE, IT, ECE, AI/ML, EEE, MECH) | **Closed** | 14 | 0 (Season Concluded) | 0 (4 Selected) |
+| `DRV-U26-01` | `CMP-U26-01` Aether Cloud Networks | Distributed Systems Engineer - I | 7.50 | CSE, IT | Open | 14 | 4 awaiting | 3 |
+| `DRV-U26-02` | `CMP-U26-02` Cognitive Robotics Labs | Machine Learning Research Engineer | 8.00 | CSE, IT, AI/ML | Open | 14 | 4 awaiting | 3 |
+| `DRV-U26-03` | `CMP-U26-03` FinMetrics Quant Technologies | Quantitative Data Analyst | 7.00 | CSE, IT, ECE | Open | 14 | 4 awaiting | 3 |
+| `DRV-U26-04` | `CMP-U26-04` Silicon Wave Microelectronics | Embedded Systems & Firmware Engineer | 6.80 | ECE, EEE | Open | 14 | 4 awaiting | 3 |
+| `DRV-U26-05` | `CMP-U26-05` Zenith Strategy Consultants | Technology Risk Consultant | 7.20 | CSE, IT, ECE, MECH | Open | 14 | 4 awaiting | 3 |
+| `DRV-U26-06` | `CMP-U26-06` BioInformatics Core Systems | Bio-Data Platform Engineer | 7.50 | CSE, IT, BIO | **Closed** | 14 | 0 (Concluded) | 0 (4 Selected) |
 
 #### 3.2 Candidate & Application Distribution
 

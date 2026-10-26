@@ -391,15 +391,15 @@ class SchedulingWorkflowRealHttpIntegrationTest {
         assertEquals("Quantum Lab Room 1", JsonPath.read(emmaInterviewsRes.body(), "$[0].roomName"));
         assertEquals("Dr. Richard Feynman", JsonPath.read(emmaInterviewsRes.body(), "$[0].interviewerName"));
 
-        // Step 13: Officer fetches confirmed timetable
+        // Step 13: Officer fetches confirmed timetable (scoped to DRV_ID to prevent cross-talk with pre-existing season data)
         HttpResponse<String> officerPublishedRes = httpClient.send(HttpRequest.newBuilder()
-                .uri(URI.create(getBaseUrl() + "/api/v1/officer/scheduling/published"))
+                .uri(URI.create(getBaseUrl() + "/api/v1/officer/scheduling/published?driveId=" + DRV_ID))
                 .header("Cookie", "JSESSIONID=" + officerSession.sessionId())
                 .GET()
                 .build(), HttpResponse.BodyHandlers.ofString());
         assertEquals(200, officerPublishedRes.statusCode());
         int totalElements = JsonPath.read(officerPublishedRes.body(), "$.totalElements");
-        assertTrue(totalElements >= 1);
+        assertEquals(1, totalElements);
         assertEquals(confirmedSessionId, JsonPath.read(officerPublishedRes.body(), "$.content[0].sessionId"));
 
         // Step 14 & 15: Repeat publication using same preview token -> Verify duplicate is rejected without side effects (409)

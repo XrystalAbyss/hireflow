@@ -1,8 +1,18 @@
 param([string]$Password = $env:HIREFLOW_IT_APP_PASSWORD)
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
-if ([string]::IsNullOrWhiteSpace($Password)) { throw 'Set HIREFLOW_IT_APP_PASSWORD to the isolated application-role password.' }
 $repository = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+if ([string]::IsNullOrWhiteSpace($Password)) {
+    $localProps = Join-Path $repository 'hireflow-local.properties'
+    if (Test-Path $localProps) {
+        Get-Content $localProps | ForEach-Object {
+            if ($_ -match '^\s*hireflow\.db\.password\s*=\s*(.+)$') {
+                $Password = $matches[1].Trim()
+            }
+        }
+    }
+}
+if ([string]::IsNullOrWhiteSpace($Password)) { throw 'Set HIREFLOW_IT_APP_PASSWORD to the isolated application-role password.' }
 $schema = 'cap852_core_' + [guid]::NewGuid().ToString('N').Substring(0,12)
 $names = @('HIREFLOW_CORE_TEST_SCHEMA','HIREFLOW_ALLOW_ISOLATED_IT','HIREFLOW_DB_URL','HIREFLOW_DB_USER','HIREFLOW_DB_PASSWORD','HIREFLOW_IT_APP_PASSWORD')
 $previous = @{}

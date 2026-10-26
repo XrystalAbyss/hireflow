@@ -49,8 +49,16 @@ public final class UniversityCampusRoomPolicy {
             "L-LAB-6", "L-LAB-7", "L-LAB-8", "L-LAB-9"
     );
 
-    private static final Set<String> PRESERVED_LEGACY_ROOM_PREFIXES = Set.of(
-            "RM-101", "RM-DEMO-01", "RM-DEMO-02", "RM-DEMO-03", "RM-DEMO-VIVA22"
+    /**
+     * Exact immutable set of preserved historical legacy room identifiers.
+     * Prevents over-permissive wildcard registration while retaining full backward
+     * compatibility for existing database records and historical test fixtures.
+     */
+    public static final Set<String> PRESERVED_LEGACY_ROOM_IDS = Set.of(
+            "RM-101", "RM-DEMO-01", "RM-DEMO-02", "RM-DEMO-03", "RM-DEMO-VIVA22",
+            "RM-102", "RM-201", "RM-BUSY", "RM-A", "RM-B", "RM-CONT-01",
+            "RM-REF-99", "RM-SCHED-01", "RM-PUB-01", "E2E-RM-01",
+            "RM-NEW-01", "RM-E2E-99", "RM-E2E-SCH"
     );
 
     private UniversityCampusRoomPolicy() {
@@ -100,14 +108,12 @@ public final class UniversityCampusRoomPolicy {
     }
 
     /**
-     * Checks if the room is a recognized legacy or test fixture room.
+     * Checks if the room matches the exact set of recognized historical legacy rooms.
+     * Arbitrary unapproved room codes or prefixes are strictly rejected.
      */
     public static boolean isLegacyOrTestRoom(String id) {
         if (id == null) return false;
-        String upper = id.trim().toUpperCase();
-        return PRESERVED_LEGACY_ROOM_PREFIXES.contains(upper)
-                || upper.startsWith("RM-")
-                || upper.startsWith("E2E-");
+        return PRESERVED_LEGACY_ROOM_IDS.contains(id.trim().toUpperCase());
     }
 
     /**
@@ -130,7 +136,41 @@ public final class UniversityCampusRoomPolicy {
     }
 
     /**
-     * Validates that a room is strictly approved for interview scheduling.
+     * Validates that a newly created interview room strictly belongs to the approved
+     * 36-room university engineering inventory (K/L Block upper floors).
+     * Prevents placement officers from registering arbitrary or unapproved room numbers.
+     */
+    public static void validateRoomForCreation(Room room) {
+        if (room == null) {
+            throw new ValidationException("Interview room cannot be null.");
+        }
+        String id = room.getId();
+        String name = room.getName();
+
+        if (isExcludedFacultyRoom(id)) {
+            throw new ValidationException(String.format(
+                    "Cannot register room '%s'. Room is designated for faculty offices or student amenities and cannot be used for interview sessions.",
+                    id));
+        }
+        if (isLaboratoryFacility(id, name)) {
+            throw new ValidationException(String.format(
+                    "Cannot register facility '%s' ('%s'). Ground-floor engineering laboratories cannot be registered as interview rooms.",
+                    id, name));
+        }
+        if (!isApprovedEngineeringRoom(id) && !isLegacyOrTestRoom(id)) {
+            throw new ValidationException(String.format(
+                    "Room code '%s' is not an approved university engineering interview venue. Newly registered rooms must belong to the approved 36-room inventory across K and L Block upper floors (e.g. KF02..KT10, LF02..LT10).",
+                    id));
+        }
+        if (room.getCapacity() <= 0) {
+            throw new ValidationException(String.format(
+                    "Room '%s' has invalid capacity (%d). Seating capacity must be greater than zero.",
+                    id, room.getCapacity()));
+        }
+    }
+
+    /**
+     * Validates that a room is strictly approved for interview scheduling and timetable allocation.
      * Throws {@link ValidationException} with informative reason if ineligible.
      */
     public static void validateRoomForInterviewAllocation(Room room) {

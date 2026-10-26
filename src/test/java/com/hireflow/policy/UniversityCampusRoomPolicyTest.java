@@ -132,4 +132,52 @@ public class UniversityCampusRoomPolicyTest {
         assertThrows(ValidationException.class, () -> new Room("KF02", "K Block First Floor - Room KF02", 0));
         assertThrows(ValidationException.class, () -> new Room("KF02", "K Block First Floor - Room KF02", -5));
     }
+
+    @Test
+    @DisplayName("CAP-8.6.4: Narrow legacy authorization rejects arbitrary RM- or E2E- prefixes")
+    void testNarrowLegacyRoomAuthorization() {
+        // Known historical IDs must be preserved
+        assertTrue(UniversityCampusRoomPolicy.isLegacyOrTestRoom("RM-101"));
+        assertTrue(UniversityCampusRoomPolicy.isLegacyOrTestRoom("RM-DEMO-01"));
+        assertTrue(UniversityCampusRoomPolicy.isLegacyOrTestRoom("RM-DEMO-VIVA22"));
+
+        // Arbitrary unapproved prefixes must NOT be accepted as legacy rooms
+        assertFalse(UniversityCampusRoomPolicy.isLegacyOrTestRoom("RM-UNKNOWN"));
+        assertFalse(UniversityCampusRoomPolicy.isLegacyOrTestRoom("RM-ARBITRARY-123"));
+        assertFalse(UniversityCampusRoomPolicy.isLegacyOrTestRoom("E2E-RANDOM-ROOM"));
+        assertFalse(UniversityCampusRoomPolicy.isLegacyOrTestRoom("RANDOM-ROOM"));
+
+        // An arbitrary unapproved room cannot be allocated
+        Room arbitraryRoom = new Room("RM-ARBITRARY-99", "Arbitrary Non-Campus Room", 4);
+        assertFalse(UniversityCampusRoomPolicy.isInterviewEligible(arbitraryRoom));
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                UniversityCampusRoomPolicy.validateRoomForInterviewAllocation(arbitraryRoom));
+        assertTrue(ex.getMessage().contains("not an approved university interview venue"));
+    }
+
+    @Test
+    @DisplayName("CAP-8.6.4: Room creation policy strictly requires approved 36-room campus inventory")
+    void testRoomCreationPolicy() {
+        // Approved engineering room passes creation validation
+        Room validNewRoom = new Room("KF02", "K Block First Floor - Room KF02", 4);
+        assertDoesNotThrow(() -> UniversityCampusRoomPolicy.validateRoomForCreation(validNewRoom));
+
+        // Faculty room is rejected
+        Room facultyRoom = new Room("KF01", "Faculty Office KF01", 4);
+        ValidationException exFac = assertThrows(ValidationException.class, () ->
+                UniversityCampusRoomPolicy.validateRoomForCreation(facultyRoom));
+        assertTrue(exFac.getMessage().contains("designated for faculty"));
+
+        // Laboratory is rejected
+        Room labRoom = new Room("K-LAB-1", "Ground Floor Lab 1", 30);
+        ValidationException exLab = assertThrows(ValidationException.class, () ->
+                UniversityCampusRoomPolicy.validateRoomForCreation(labRoom));
+        assertTrue(exLab.getMessage().contains("laboratories cannot be registered"));
+
+        // Legacy code cannot be newly registered as a campus room
+        Room legacyAttempt = new Room("RM-DEMO-NEW", "New Legacy Attempt", 4);
+        ValidationException exLeg = assertThrows(ValidationException.class, () ->
+                UniversityCampusRoomPolicy.validateRoomForCreation(legacyAttempt));
+        assertTrue(exLeg.getMessage().contains("not an approved university engineering interview venue"));
+    }
 }

@@ -180,7 +180,7 @@ public class OfficerInterviewResourceController {
         }
 
         Room testRoom = new Room(normId, createDto.name().trim(), createDto.capacity());
-        UniversityCampusRoomPolicy.validateRoomForInterviewAllocation(testRoom);
+        UniversityCampusRoomPolicy.validateRoomForCreation(testRoom);
 
         Room created = transactionManager.runInTransaction(conn -> {
             if (roomRepository.existsById(normId)) {
