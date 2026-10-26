@@ -179,5 +179,32 @@ public class UniversityCampusRoomPolicyTest {
         ValidationException exLeg = assertThrows(ValidationException.class, () ->
                 UniversityCampusRoomPolicy.validateRoomForCreation(legacyAttempt));
         assertTrue(exLeg.getMessage().contains("not an approved university engineering interview venue"));
+
+        // Historical legacy room identifiers are strictly rejected from NEW room registration
+        Room preservedLegacyRoom = new Room("RM-101", "Preserved Legacy Room 101", 4);
+        ValidationException exPreserved = assertThrows(ValidationException.class, () ->
+                UniversityCampusRoomPolicy.validateRoomForCreation(preservedLegacyRoom));
+        assertTrue(exPreserved.getMessage().contains("Legacy and test identifiers cannot be used for new room registration"));
+
+        // Test fixture identifiers are rejected by default in production mode
+        Room testFixtureRoom = new Room("RM-NEW-01", "Test Fixture Room", 4);
+        UniversityCampusRoomPolicy.setTestContextRegistrationAllowed(false);
+        ValidationException exTestFixture = assertThrows(ValidationException.class, () ->
+                UniversityCampusRoomPolicy.validateRoomForCreation(testFixtureRoom));
+        assertTrue(exTestFixture.getMessage().contains("Legacy and test identifiers cannot be used for new room registration"));
+
+        // When explicitly running under test context, historical test fixture is authorized
+        try {
+            UniversityCampusRoomPolicy.setTestContextRegistrationAllowed(true);
+            assertDoesNotThrow(() -> UniversityCampusRoomPolicy.validateRoomForCreation(testFixtureRoom));
+        } finally {
+            UniversityCampusRoomPolicy.setTestContextRegistrationAllowed(false);
+        }
+
+        // But historical legacy rooms remain eligible for reading and interview allocation
+        assertTrue(UniversityCampusRoomPolicy.isInterviewEligible(preservedLegacyRoom),
+                "Historical legacy room must remain eligible for existing appointment reads and allocation");
+        assertDoesNotThrow(() ->
+                UniversityCampusRoomPolicy.validateRoomForInterviewAllocation(preservedLegacyRoom));
     }
 }

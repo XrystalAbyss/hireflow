@@ -18,6 +18,7 @@ public final class IsolatedDatabaseInitializer implements ApplicationContextInit
         SafeTestDatabase.requireTarget(coreUrl,coreUser);
         try(var c=DriverManager.getConnection(url,user,env.getProperty("spring.datasource.password"))) {
             SafeTestDatabase.captureBaseline(c);
+            com.hireflow.policy.UniversityCampusRoomPolicy.setTestContextRegistrationAllowed(true);
         } catch(Exception e) { throw new IllegalStateException("Isolated test database preflight failed",e); }
     }
 }

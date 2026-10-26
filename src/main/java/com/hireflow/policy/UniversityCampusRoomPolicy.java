@@ -57,9 +57,28 @@ public final class UniversityCampusRoomPolicy {
     public static final Set<String> PRESERVED_LEGACY_ROOM_IDS = Set.of(
             "RM-101", "RM-DEMO-01", "RM-DEMO-02", "RM-DEMO-03", "RM-DEMO-VIVA22",
             "RM-102", "RM-201", "RM-BUSY", "RM-A", "RM-B", "RM-CONT-01",
-            "RM-REF-99", "RM-SCHED-01", "RM-PUB-01", "E2E-RM-01",
+            "RM-REF-99", "RM-SCHED-01", "RM-PUB-01", "E2E-RM-01"
+    );
+
+    /**
+     * Narrow set of test-fixture room identifiers required strictly by historical integration test suites.
+     * These are never allowed in live production and only authorized when test-context is explicitly active.
+     */
+    public static final Set<String> HISTORICAL_TEST_FIXTURE_ROOM_IDS = Set.of(
             "RM-NEW-01", "RM-E2E-99", "RM-E2E-SCH"
     );
+
+    private static volatile boolean testContextRegistrationAllowed = false;
+
+    public static void setTestContextRegistrationAllowed(boolean allowed) {
+        testContextRegistrationAllowed = allowed;
+    }
+
+    public static boolean isTestContextRegistrationAllowed() {
+        return testContextRegistrationAllowed ||
+                Boolean.getBoolean("hireflow.test.allow-test-rooms") ||
+                "true".equalsIgnoreCase(System.getenv("HIREFLOW_TEST_ROOMS_ALLOWED"));
+    }
 
     private UniversityCampusRoomPolicy() {
     }
@@ -113,7 +132,8 @@ public final class UniversityCampusRoomPolicy {
      */
     public static boolean isLegacyOrTestRoom(String id) {
         if (id == null) return false;
-        return PRESERVED_LEGACY_ROOM_IDS.contains(id.trim().toUpperCase());
+        String upper = id.trim().toUpperCase();
+        return PRESERVED_LEGACY_ROOM_IDS.contains(upper) || HISTORICAL_TEST_FIXTURE_ROOM_IDS.contains(upper);
     }
 
     /**
@@ -157,9 +177,13 @@ public final class UniversityCampusRoomPolicy {
                     "Cannot register facility '%s' ('%s'). Ground-floor engineering laboratories cannot be registered as interview rooms.",
                     id, name));
         }
-        if (!isApprovedEngineeringRoom(id) && !isLegacyOrTestRoom(id)) {
+
+        boolean isApproved = isApprovedEngineeringRoom(id);
+        boolean isTestFixtureAllowed = isTestContextRegistrationAllowed() && HISTORICAL_TEST_FIXTURE_ROOM_IDS.contains(id.trim().toUpperCase());
+
+        if (!isApproved && !isTestFixtureAllowed) {
             throw new ValidationException(String.format(
-                    "Room code '%s' is not an approved university engineering interview venue. Newly registered rooms must belong to the approved 36-room inventory across K and L Block upper floors (e.g. KF02..KT10, LF02..LT10).",
+                    "Room code '%s' is not an approved university engineering interview venue. Newly registered rooms must belong to the approved 36-room inventory across K and L Block upper floors (e.g. KF02..KT10, LF02..LT10). Legacy and test identifiers cannot be used for new room registration in live production.",
                     id));
         }
         if (room.getCapacity() <= 0) {

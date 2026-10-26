@@ -69,16 +69,14 @@ All CAP-8.6.3 dataset expansion records are isolated under the `U26` namespace t
 #### 3.2 Candidate & Application Distribution
 
 - **Total Students Seeded:** 65 synthetic profiles (`STU-U26-001` through `STU-U26-065`).
-- **Academic Branches:** CSE (25), IT (14), ECE (14), AI/ML (8), EEE (2), MECH (2).
-- **CGPA Range:** 6.10 to 9.60 with realistic academic distribution.
-- **Privacy Assurance:** All student emails use fictional domains (`@campus.example.test`).
-- **Application Status Distribution per Active Drive (14 apps each):**
-  - `APPLIED`: 3–4 candidates in initial review.
-  - `SHORTLISTED`: 4 candidates shortlisted and awaiting Scheduling Studio allocation.
-  - `SCHEDULED`: 3 candidates with confirmed appointments in K/L Block rooms.
-  - `REJECTED`: 3–4 candidates rejected with documented audit reasons.
+- **Academic Branches:** CSE (22), IT (14), ECE (12), AI/ML (8), EEE (5), MECH (4) (65 total).
+- **CGPA Range:** 6.45 to 9.80 with realistic academic distribution.
+- **Privacy Assurance:** All student emails use fictional domains (`@example.test`).
+- **Application Status Distribution per Active Drive (14 apps each, 84 U26 total):**
+  - `DRV-U26-01`, `02`, `03`, `05`: 4 `APPLIED`, 4 `SHORTLISTED`, 3 `SCHEDULED`, 3 `REJECTED`.
+  - `DRV-U26-04`: 3 `APPLIED`, 4 `SHORTLISTED`, 3 `SCHEDULED`, 4 `REJECTED`.
 - **Closed Historical Drive (`DRV-U26-06`):**
-  - Retains full applicant history: 4 `SELECTED`, 5 `REJECTED`, 5 `INELIGIBLE`.
+  - Retains full applicant history: 0 `APPLIED`, 0 `SHORTLISTED`, 0 `SCHEDULED`, 5 `REJECTED`, 4 `SELECTED`, 5 `INELIGIBLE` (14 total).
 
 ---
 

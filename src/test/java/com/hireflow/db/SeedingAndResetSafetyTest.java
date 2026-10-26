@@ -267,6 +267,120 @@ public class SeedingAndResetSafetyTest {
         }
     }
 
+    @Test
+    @Order(7)
+    @DisplayName("B7: university-season-reset.sql deletes applications strictly by exact ID, NEVER by drive_id membership")
+    void testUniversitySeasonResetSafetyManifest() throws Exception {
+        Path resetScriptPath = Path.of("infra/cap8-integration/university-season-reset.sql");
+        assertTrue(Files.exists(resetScriptPath), "university-season-reset.sql must exist");
+
+        String content = Files.readString(resetScriptPath);
+        String executableSql = content.replaceAll("(?m)^--.*$", "");
+
+        // Must NOT infer application deletion from drive membership
+        assertFalse(executableSql.contains("DELETE FROM applications\n WHERE drive_id IN")
+                || executableSql.contains("DELETE FROM applications WHERE drive_id IN"),
+                "Dangerous deletion of applications by drive_id must be eliminated");
+
+        // Must use exact application IDs
+        assertTrue(executableSql.contains("'APP-U26-' || LPAD(i::text, 3, '0')"),
+                "Applications must be deleted by exact generated ID");
+
+        // Must guard DRV-DEMO-VIVA22
+        assertTrue(executableSql.contains("DRV-DEMO-VIVA22"),
+                "Must explicitly guard DRV-DEMO-VIVA22");
+    }
+
+    @Test
+    @Order(8)
+    @DisplayName("B8: university-season-reset.sql fail-closed guard rejects reset when independent application exists")
+    void testUniversitySeasonResetFailsClosedOnIndependentApplication() throws Exception {
+        assumeTrue(dbAvailable, "Isolated integration database not reachable on 55432");
+
+        try (Connection conn = dataSourceProvider.getConnection()) {
+            conn.setAutoCommit(false);
+            try (Statement st = conn.createStatement()) {
+                st.execute("SET search_path = public");
+                Savepoint sp = conn.setSavepoint();
+
+                // Insert independent student and application on DRV-U26-01
+                st.executeUpdate("INSERT INTO students (id, name, email, branch, cgpa, graduation_year, active) " +
+                        "VALUES ('STU-TEST-INDEP', 'Test Indep Student', 'indep@test.local', 'CSE', 8.50, 2026, TRUE)");
+                st.executeUpdate("INSERT INTO applications (id, student_id, drive_id, status, remarks) " +
+                        "VALUES ('APP-TEST-INDEP', 'STU-TEST-INDEP', 'DRV-U26-01', 'APPLIED', 'Independent non-fixture app')");
+
+                // Execute the safety guard from university-season-reset.sql
+                String guardSql = "DO $$\n" +
+                        "BEGIN\n" +
+                        "    IF EXISTS (\n" +
+                        "        SELECT 1 FROM applications a\n" +
+                        "         WHERE a.drive_id IN ('DRV-U26-01', 'DRV-U26-02', 'DRV-U26-03', 'DRV-U26-04', 'DRV-U26-05', 'DRV-U26-06')\n" +
+                        "           AND a.id NOT IN (SELECT 'APP-U26-' || LPAD(i::text, 3, '0') FROM generate_series(1, 84) AS i)\n" +
+                        "    ) THEN\n" +
+                        "        RAISE EXCEPTION 'Reset aborted: independently submitted applications exist for U26 drives.';\n" +
+                        "    END IF;\n" +
+                        "END $$;";
+
+                SQLException ex = assertThrows(SQLException.class, () -> st.execute(guardSql));
+                assertTrue(ex.getMessage().contains("independently submitted applications exist for U26 drives"),
+                        "Expected fail-closed exception message, but got: " + ex.getMessage());
+
+                conn.rollback(sp);
+            } finally {
+                conn.rollback();
+            }
+        }
+    }
+
+    @Test
+    @Order(9)
+    @DisplayName("B9: university-season-reset.sql fail-closed guard rejects reset when independent session depends on U26 room")
+    void testUniversitySeasonResetFailsClosedOnIndependentSession() throws Exception {
+        assumeTrue(dbAvailable, "Isolated integration database not reachable on 55432");
+
+        try (Connection conn = dataSourceProvider.getConnection()) {
+            conn.setAutoCommit(false);
+            try (Statement st = conn.createStatement()) {
+                st.execute("SET search_path = public");
+                Savepoint sp = conn.setSavepoint();
+
+                // Insert dedicated student and application on DRV-DEMO-01, then create independent session referencing U26 room KF02
+                st.executeUpdate("INSERT INTO students (id, name, email, branch, cgpa, graduation_year, active) " +
+                        "VALUES ('STU-TEST-INDEP-SES', 'Test Indep Student 2', 'indep2@test.local', 'CSE', 8.50, 2026, TRUE)");
+                st.executeUpdate("INSERT INTO applications (id, student_id, drive_id, status, remarks) " +
+                        "VALUES ('APP-TEST-INDEP-SES', 'STU-TEST-INDEP-SES', 'DRV-DEMO-01', 'SCHEDULED', 'App for session test')");
+                st.executeUpdate("INSERT INTO interview_sessions (id, application_id, student_id, interviewer_id, room_id, start_time, end_time) " +
+                        "VALUES ('SES-TEST-INDEP', 'APP-TEST-INDEP-SES', 'STU-TEST-INDEP-SES', 'INT-DEMO-01', 'KF02', " +
+                        "'2026-11-20 09:00:00', '2026-11-20 09:45:00')");
+
+                // Execute the safety guard from university-season-reset.sql
+                String guardSql = "DO $$\n" +
+                        "BEGIN\n" +
+                        "    IF EXISTS (\n" +
+                        "        SELECT 1 FROM interview_sessions s\n" +
+                        "         WHERE s.id NOT IN (SELECT 'SES-U26-' || LPAD(i::text, 2, '0') FROM generate_series(1, 15) AS i)\n" +
+                        "           AND (s.room_id IN ('KF02','KF03','KF04','KF08','KF09','KF10',\n" +
+                        "                              'KS02','KS03','KS04','KS08','KS09','KS10',\n" +
+                        "                              'KT02','KT03','KT04','KT08','KT09','KT10',\n" +
+                        "                              'LF02','LF03','LF04','LF08','LF09','LF10',\n" +
+                        "                              'LS02','LS03','LS04','LS08','LS09','LS10',\n" +
+                        "                              'LT02','LT03','LT04','LT08','LT09','LT10'))\n" +
+                        "    ) THEN\n" +
+                        "        RAISE EXCEPTION 'Reset aborted: independently created interview sessions depend on U26 rooms, interviewers, or applications.';\n" +
+                        "    END IF;\n" +
+                        "END $$;";
+
+                SQLException ex = assertThrows(SQLException.class, () -> st.execute(guardSql));
+                assertTrue(ex.getMessage().contains("independently created interview sessions depend on U26 rooms"),
+                        "Expected fail-closed exception message, but got: " + ex.getMessage());
+
+                conn.rollback(sp);
+            } finally {
+                conn.rollback();
+            }
+        }
+    }
+
     private int getCount(Statement st, String tableName) throws SQLException {
         try (ResultSet rs = st.executeQuery("SELECT count(*) FROM " + tableName)) {
             assertTrue(rs.next());

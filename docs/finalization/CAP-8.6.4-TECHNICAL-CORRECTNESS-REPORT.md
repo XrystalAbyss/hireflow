@@ -20,7 +20,7 @@ The historical drift between documentation and committed SQL fixture has been re
   1. `CMP-U26-01` / `DRV-U26-01`: Aether Cloud Networks — Distributed Systems Engineer - I (14 applicants: 4 Applied, 4 Shortlisted, 3 Scheduled, 3 Rejected)
   2. `CMP-U26-02` / `DRV-U26-02`: Cognitive Robotics Labs — Machine Learning Research Engineer (14 applicants: 4 Applied, 4 Shortlisted, 3 Scheduled, 3 Rejected)
   3. `CMP-U26-03` / `DRV-U26-03`: FinMetrics Quant Technologies — Quantitative Data Analyst (14 applicants: 4 Applied, 4 Shortlisted, 3 Scheduled, 3 Rejected)
-  4. `CMP-U26-04` / `DRV-U26-04`: Silicon Wave Microelectronics — Embedded Systems & Firmware Engineer (14 applicants: 4 Applied, 4 Shortlisted, 3 Scheduled, 3 Rejected)
+  4. `CMP-U26-04` / `DRV-U26-04`: Silicon Wave Microelectronics — Embedded Systems & Firmware Engineer (14 applicants: 3 Applied, 4 Shortlisted, 3 Scheduled, 4 Rejected)
   5. `CMP-U26-05` / `DRV-U26-05`: Zenith Strategy Consultants — Technology Risk Consultant (14 applicants: 4 Applied, 4 Shortlisted, 3 Scheduled, 3 Rejected)
   6. `CMP-U26-06` / `DRV-U26-06`: BioInformatics Core Systems — Bio-Data Platform Engineer [CLOSED] (14 applicants: 0 Applied, 0 Shortlisted, 0 Scheduled, 5 Rejected, 4 Selected, 5 Ineligible)
 - **Applicant Breakdown:** Exactly 84 applications in U26 season: 19 APPLIED, 20 SHORTLISTED, 15 SCHEDULED, 21 REJECTED, 4 SELECTED, 5 INELIGIBLE.

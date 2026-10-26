@@ -162,6 +162,26 @@ class OfficerInterviewResourceControllerMockMvcTest {
     }
 
     @Test
+    @DisplayName("POST /api/v1/officer/rooms: rejects historical legacy identifier RM-101 with 400 Bad Request")
+    void testCreateRoom_legacyRoomIdentifier_returnsBadRequest() throws Exception {
+        String json = """
+                {
+                    "id": "RM-101",
+                    "name": "Historical Room 101",
+                    "capacity": 4
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/officer/rooms")
+                        .with(authentication(officerAuth))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("Legacy and test identifiers cannot be used for new room registration")));
+    }
+
+    @Test
     @DisplayName("POST /api/v1/officer/rooms: rejects zero or negative capacity with 400 Bad Request")
     void testCreateRoom_zeroCapacity_returns400() throws Exception {
         String json = """
