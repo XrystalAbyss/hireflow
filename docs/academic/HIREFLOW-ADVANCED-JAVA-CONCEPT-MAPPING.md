@@ -22,44 +22,50 @@ This document establishes 1-to-1 traceability between theoretical Advanced Java 
 - **Concept:** Information hiding, immutable value objects, record types, and domain state protection.
 - **Why Selected:** Recruitment entities (such as candidate applications and interview sessions) must enforce strict invariant validity upon instantiation and forbid uncontrolled field mutation.
 - **Implementation in HireFlow:**
-  - `src/main/java/com/hireflow/model/Student.java`: Immutable core fields (`id`, `rollNumber`, `email`), defensive getters, and validated CGPA invariants ($0.0 \le \text{cgpa} \le 10.0$).
+  - `src/main/java/com/hireflow/model/Student.java`: Immutable identifier (`id`) with controlled, validated updates to mutable fields such as `email`, defensive getters, and validated CGPA invariants ($0.0 \le \text{cgpa} \le 10.0$).
   - `src/main/java/com/hireflow/model/Application.java`: Encapsulates valid lifecycle state transitions (`APPLIED` $\rightarrow$ `SHORTLISTED` $\rightarrow$ `SCHEDULED` $\rightarrow$ `SELECTED` / `REJECTED`).
-  - `src/main/java/com/hireflow/model/TimeSlot.java`: Immutable Java 21 Record verifying start time strictly precedes end time:
+  - `src/main/java/com/hireflow/scheduler/TimeWindow.java`: Immutable Java 21 Record verifying start time strictly precedes end time:
     ```java
-    public record TimeSlot(LocalDateTime startTime, LocalDateTime endTime) {
-        public TimeSlot {
-            Objects.requireNonNull(startTime, "Start time cannot be null");
-            Objects.requireNonNull(endTime, "End time cannot be null");
-            if (!startTime.isBefore(endTime)) {
-                throw new IllegalArgumentException("Start time must be before end time");
+    public record TimeWindow(LocalDateTime start, LocalDateTime end) implements Comparable<TimeWindow> {
+        public TimeWindow {
+            if (start == null || end == null) {
+                throw new ValidationException("TimeWindow start and end times cannot be null.");
+            }
+            if (!end.isAfter(start)) {
+                throw new ValidationException("TimeWindow end time must be strictly after start time.");
             }
         }
+        // See TimeWindow.java for overlap, duration, and comparison methods.
     }
     ```
 
 ### 2.2 Abstraction & Interfaces
 - **Concept:** Separation of interface contract from concrete implementation.
-- **Why Selected:** Allows identical business logic (e.g. `EligibilityService`, `GreedyScheduler`) to operate seamlessly against in-memory repository implementations (Stage 1), JDBC relational persistence (Stage 2), or Spring Data JPA repositories (Stage 4).
+- **Why Selected:** Typed repository contracts let the Java domain services use interchangeable in-memory and JDBC implementations. Spring Data JPA read-side adapters are separate and do not implement the core CRUD interface.
 - **Implementation in HireFlow:**
-  - `src/main/java/com/hireflow/repository/Repository.java`: Generic repository interface defining standard CRUD operations:
+  - `src/main/java/com/hireflow/repository/CrudRepository.java`: Generic repository interface defining standard CRUD operations:
     ```java
-    public interface Repository<T, ID> {
+    public interface CrudRepository<T, ID> {
+        T add(T entity);
+        T update(T entity);
         T save(T entity);
         Optional<T> findById(ID id);
         List<T> findAll();
-        void deleteById(ID id);
+        boolean deleteById(ID id);
         boolean existsById(ID id);
+        int count();
+        void clear();
     }
     ```
-  - Sub-interfaces: `ApplicationRepository`, `StudentRepository`, `CompanyRepository`, `RecruitmentDriveRepository`, `InterviewerRepository`, `RoomRepository`, `InterviewSessionRepository`.
+  - Sub-interfaces: `ApplicationRepository`, `StudentRepository`, `CompanyRepository`, `DriveRepository`, `InterviewerRepository`, `RoomRepository`, `InterviewSessionRepository`.
 
 ### 2.3 Generics & Type Safety
 - **Concept:** Compile-time type checking and reusable algorithmic containers.
 - **Why Selected:** Eliminates runtime `ClassCastException` and guarantees type safety across heterogeneous repository data stores and pagination models.
 - **Implementation in HireFlow:**
-  - `src/main/java/com/hireflow/repository/InMemoryRepository.java`: Generic in-memory data store using parameterized types `T` and `ID`:
+  - `src/main/java/com/hireflow/repository/AbstractInMemoryRepository.java`: Generic in-memory data store using parameterized types `T` and `ID`:
     ```java
-    public abstract class InMemoryRepository<T, ID> implements Repository<T, ID> {
+    public abstract class InMemoryCrudRepository<T, ID> implements CrudRepository<T, ID> {
         protected final ConcurrentHashMap<ID, T> storage = new ConcurrentHashMap<>();
         protected abstract ID extractId(T entity);
         ...
@@ -71,10 +77,15 @@ This document establishes 1-to-1 traceability between theoretical Advanced Java 
 - **Concept:** High-performance data structures: `List`, `ArrayList`, `Map`, `Set`, `TreeSet`, and `ConcurrentHashMap`.
 - **Why Selected:** Fast indexed traversal, unique element deduplication, and thread-safe shared state.
 - **Implementation in HireFlow:**
-  - **`ConcurrentHashMap`**: Used in `InMemoryRepository` for thread-safe concurrent storage of drives, candidates, and rooms without global synchronization bottlenecks.
+  - **`ConcurrentHashMap`**: Used in `AbstractInMemoryRepository` for thread-safe concurrent storage of drives, candidates, and rooms without global synchronization bottlenecks.
   - **`ArrayList` & `List`**: Used in `GreedyScheduler.schedule()` for maintaining ordered applicant rosters and resulting interview sessions.
   - **`Set` & `HashSet`**: Used in `RecruitmentDrive.getAllowedBranches()` for $O(1)$ branch eligibility lookups.
-  - **`TreeSet` & `Comparator`**: Used in `GreedyScheduler` for sorting candidate applications deterministically:
+  - **`Comparator`**: `GreedyScheduler` sorts candidate applications by student ID, drive ID and application ID, **not by CGPA**:
+    ```java
+    sortedApps.sort(Comparator
+        .comparing(Application::getStudentId)
+        .thenComparing(Application::getDriveId)
+        .thenComparing(Application::getId));
     ```java
     Comparator<Application> candidateComparator = Comparator
         .comparingDouble((Application a) -> studentMap.get(a.getStudentId()).getCgpa())
@@ -180,7 +191,7 @@ This document establishes 1-to-1 traceability between theoretical Advanced Java 
 - **Why Selected:** Industry-standard architectural tier serving the modern Single Page Application (SPA).
 - **Implementation in HireFlow:**
   - `hireflow-api/src/main/java/com/hireflow/api/controller/officer/OfficerSchedulingController.java`: Exposes advisory preview and publication endpoints.
-  - `hireflow-api/src/main/java/com/hireflow/api/security/SecurityConfig.java`: Configures `SecurityFilterChain`, BCrypt password encoder, and stateless API endpoints.
+  - `hireflow-api/src/main/java/com/hireflow/api/config/WebSecurityConfig.java`: Configures the `SecurityFilterChain`, stateful HTTP-session authentication, session-backed CSRF protection, and RBAC. Password hashing is implemented by the authentication layer.
   - `AccountStatusFilter.java`: Dynamically validates user account status on every request.
 
 ### 2.12 Algorithmic Design: Deterministic Greedy Scheduling
