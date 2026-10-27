@@ -52,10 +52,10 @@ powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/demo/Check-H
 - **Objective:** Prove Java 21 foundation, Generics, Collections, and Swing EDT safety.
 - **Action:** Open or demonstrate Swing desktop jar (`target/hireflow-1.0.0-desktop.jar`).
 - **Code Locations to Show Examiners:**
-  - `src/main/java/com/hireflow/model/TimeSlot.java`: Java 21 Record with immutable compact constructor validation.
-  - `src/main/java/com/hireflow/repository/Repository.java`: Generic repository interface (`<T, ID>`).
-  - `src/main/java/com/hireflow/repository/InMemoryRepository.java`: `ConcurrentHashMap` for lock-free thread-safe in-memory caching.
-  - `src/main/java/com/hireflow/gui/SchedulePanel.java`: `SwingWorker` running `GreedyScheduler` asynchronously so the Swing EDT never freezes.
+  - `src/main/java/com/hireflow/scheduler/TimeWindow.java`: Java 21 Record with immutable compact constructor validation.
+  - `src/main/java/com/hireflow/repository/CrudRepository.java`: Generic repository interface (`<T, ID>`).
+  - `src/main/java/com/hireflow/repository/AbstractInMemoryRepository.java`: a `ConcurrentHashMap` backing store; combined check-then-write operations are not automatically atomic.
+  - `src/main/java/com/hireflow/ui/SchedulePanel.java`: `SwingWorker` running `GreedyScheduler` asynchronously so the Swing EDT never freezes.
 
 ### Phase 3: Relational Persistence, JDBC & Database Constraints (Minutes 3:00 – 4:30)
 - **Objective:** Demonstrate JDBC connection pooling, ACID transaction boundaries, and PostgreSQL GiST exclusion constraints.
@@ -64,29 +64,29 @@ powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/demo/Check-H
   - `src/main/resources/db/migration/V1__initial_schema.sql`:
     - Point out `ex_room_temporal_overlap` and `ex_interviewer_temporal_overlap` using `btree_gist` and `tsrange`.
     - Explain: *The database engine physically rejects concurrent appointment overlaps at the storage engine level.*
-  - `src/main/java/com/hireflow/repository/jdbc/JdbcApplicationRepository.java`: `PreparedStatement` with parameterized queries inside `try-with-resources`.
+  - `src/main/java/com/hireflow/repository/JdbcApplicationRepository.java`: `PreparedStatement` with parameterized queries inside `try-with-resources`.
 
 ### Phase 4: Student Portal & Real-Time Eligibility Evaluator (Minutes 4:30 – 6:30)
 - **Objective:** Demonstrate candidate experience, role-based security, and academic eligibility engine.
 - **Action:** Open browser at `http://localhost:5174`.
 - **Flow:**
-  1. Log in as `demo.student` (`student123`).
+  1. Log in as `demo.student` (privately provided local demo credential).
   2. View **Student Dossier**: Branch (`CSE`), CGPA (`8.75`), Roll Number.
   3. Navigate to **Recruitment Drives**:
      - `DRV-U26-01` (Aether Cloud Networks): Shows **Eligible** badge (minimum CGPA 7.50, allowed branches CSE, IT).
      - `DRV-U26-04` (Silicon Wave Microelectronics): Shows **Ineligible** warning because allowed branches are ECE, EEE.
      - `DRV-U26-06` (BioInformatics Core Systems): Shows **Drive Closed** badge; rejects submissions.
-  4. Submit application for an open drive; show immediate status update to `APPLIED`. Show that submitting a second time is rejected by duplicate prevention.
+  4. Inspect an existing application and explain the submission and duplicate-check workflow without modifying preserved records.
 
 ### Phase 5: Officer Command Center & Flagship Scheduling Studio (Minutes 6:30 – 8:30)
 - **Objective:** Demonstrate Placement Officer management and deterministic Greedy Scheduling.
-- **Action:** Log out and log in as `demo.officer` (`officer123`).
+- **Action:** Log out and log in as `demo.officer` (privately provided local demo credential).
 - **Flow:**
   1. **Officer Dashboard (`/officer/dashboard`)**: Show live metrics: 12 corporate drives, 41 interview rooms, 72 enrolled students, 92 applications, 21 confirmed interviews.
-  2. **Candidate Review (`/officer/candidates`)**:
+  2. **Candidate Review (`/officer/drives/DRV-U26-01/applications`)**:
      - Filter candidates by drive `DRV-U26-01` (Aether Cloud Networks).
      - Observe applicant breakdown (4 `APPLIED`, 4 `SHORTLISTED`, 3 `SCHEDULED`, 3 `REJECTED`).
-     - Demonstrate transitioning an applicant to `SHORTLISTED`.
+     - Explain shortlisting using a pre-existing shortlisted candidate; do not mutate protected demo records.
   3. **Campus Facilities (`/officer/resources`)**:
      - Filter rooms by **K Block** (18 rooms), **L Block** (18 rooms), and **Preserved Legacy** (5 rooms).
      - Explain institutional policy: 36 approved engineering rooms (`KF02`–`LT10`), ground-floor labs and faculty offices strictly prohibited.
@@ -120,16 +120,16 @@ powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/demo/Check-H
 
 | Concept | File Location | Key Symbol / Method |
 |---|---|---|
-| **Immutable Value Object** | `src/main/java/com/hireflow/model/TimeSlot.java` | `record TimeSlot(LocalDateTime start, LocalDateTime end)` |
+| **Immutable Value Object** | `src/main/java/com/hireflow/scheduler/TimeWindow.java` | `record TimeWindow(LocalDateTime start, LocalDateTime end)` |
 | **Encapsulation & Validation** | `src/main/java/com/hireflow/model/Student.java` | `validateCgpa(double cgpa)` |
-| **Generic Repository Abstraction** | `src/main/java/com/hireflow/repository/Repository.java` | `public interface Repository<T, ID>` |
-| **Thread-Safe Memory Caching** | `src/main/java/com/hireflow/repository/InMemoryRepository.java` | `ConcurrentHashMap<ID, T> storage` |
-| **Deterministic Greedy Scheduler** | `src/main/java/com/hireflow/scheduler/GreedyScheduler.java` | `schedule(ScheduleRequest request)` |
-| **Double-Booking Conflict Checker** | `src/main/java/com/hireflow/scheduler/ConflictChecker.java` | `hasConflict(InterviewSession session)` |
-| **Asynchronous EDT Safety** | `src/main/java/com/hireflow/gui/SchedulePanel.java` | `new SwingWorker<ScheduleResult, Void>()` |
+| **Generic Repository Abstraction** | `src/main/java/com/hireflow/repository/CrudRepository.java` | `public interface CrudRepository<T, ID>` |
+| **Thread-Safe Memory Caching** | `src/main/java/com/hireflow/repository/AbstractInMemoryRepository.java` | `Map<ID, T> store = new ConcurrentHashMap<>()` |
+| **Deterministic Greedy Scheduler** | `src/main/java/com/hireflow/scheduler/GreedyScheduler.java` | `schedule(SchedulingRequest request)` |
+| **Double-Booking Conflict Checker** | `src/main/java/com/hireflow/scheduler/ConflictChecker.java` | `hasStudentConflict(...), hasInterviewerConflict(...), hasRoomConflict(...)` |
+| **Asynchronous EDT Safety** | `src/main/java/com/hireflow/ui/SchedulePanel.java` | `new SwingWorker<SchedulingResult, Void>()` |
 | **Connection Pool Management** | `src/main/java/com/hireflow/db/DataSourceProvider.java` | `HikariConfig`, `HikariDataSource` |
 | **PostgreSQL GiST Constraints** | `src/main/resources/db/migration/V1__initial_schema.sql` | `EXCLUDE USING gist (room_id WITH =, ...)` |
-| **Session & CSRF Security** | `hireflow-api/src/main/java/com/hireflow/api/config/SecurityConfig.java` | `SecurityFilterChain`, `CookieCsrfTokenRepository` |
+| **Session & CSRF Security** | `hireflow-api/src/main/java/com/hireflow/api/config/WebSecurityConfig.java` | `SecurityFilterChain`, `HttpSessionCsrfTokenRepository` |
 | **Institutional Campus Policy** | `src/main/java/com/hireflow/policy/UniversityCampusRoomPolicy.java` | `validateRoomForCreation(Room room)` |
 
 ---
@@ -152,4 +152,4 @@ powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/demo/Check-H
 2. **Do not run reset scripts during a presentation.** Reset scripts are administrative test maintenance procedures.
 3. **Prefer Advisory Preview for scheduling.** Demonstrating the Advisory Preview proves the algorithmic greedy engine without changing preserved demo records.
 4. **Emphasize Java primacy.** Java 21, Collections, JDBC, and Spring Boot provide the entire computational and transactional backbone; React acts as the presentation layer.
-5. **Never describe GreedyScheduler as AI or globally optimal.** It is a deterministic greedy heuristic operating in polynomial time $O(N \log N + N \cdot R \cdot I)$.
+5. **Never describe GreedyScheduler as AI or globally optimal.** It is a deterministic greedy heuristic operating in polynomial time $O(N\log N + N\cdot S\cdot I\cdot R\cdot C)$ (illustrative bound accounting for start slots $S$ and session-check cost $C$).
