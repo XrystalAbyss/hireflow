@@ -35,8 +35,10 @@ public final class SafeTestDatabase {
         for (String table : TABLES) {
             if (table.equals("drive_eligible_branches")) continue;
             var ids = new HashSet<String>();
-            try (var st=c.createStatement(); var rs=st.executeQuery("SELECT id FROM " + table)) {
-                while(rs.next()) ids.add(rs.getString(1));
+            try (var st = c.createStatement(); var rs = st.executeQuery("SELECT id FROM " + table)) {
+                while (rs.next()) ids.add(rs.getString(1));
+            } catch (SQLException ignored) {
+                // Table may not exist yet if migrations run during Spring Boot startup
             }
             protectedIds.put(table, ids);
         }
