@@ -68,7 +68,7 @@ The HireFlow CI/CD architecture is engineered for **dependability, least-privile
 
 #### Job 3: `security-audit`
 - **Environment:** `ubuntu-latest`.
-- **Secret Scanning:** Scans tracked and untracked repository paths for historical leak patterns (`hireflow_it_app_secret_2026`, `hireflow_bootstrap_admin_secret`). Fails closed if detected.
+- **Secret Scanning:** Scans tracked and untracked repository paths for historical leak patterns (`<REDACTED_APP_SECRET_2026>`, `<REDACTED_BOOTSTRAP_SECRET>`). Fails closed if detected.
 - **Dependency Audit:** Audits npm dependencies for known high-severity vulnerabilities.
 
 #### Job 4: `postgres-integration`

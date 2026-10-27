@@ -76,6 +76,9 @@ jobs:
           java-version: '21'
           cache: 'maven'
 
+      - name: Ensure Maven wrapper is executable
+        run: chmod +x ./mvnw
+
       - name: Compile and install root classes module
         run: ./mvnw -B install -DskipTests -q
 
@@ -101,8 +104,9 @@ jobs:
       - name: Scan repository for potential committed secrets
         run: |
           echo "Scanning for accidental secret commits or unredacted keys..."
-          if grep -rnEI '(hireflow_it_app_secret_2026|hireflow_bootstrap_admin_secret)' . \
-            --exclude-dir={.git,node_modules,target,.run,dist}; then
+          FORBIDDEN_PATTERN='(hireflow_it_app_secret_2026|hireflow_bootstrap_admin_secret)'
+          if grep -rnEI "$FORBIDDEN_PATTERN" . \
+            --exclude-dir={.git,node_modules,target,.run,dist,.github}; then
             echo "ERROR: Forbidden secret detected in source tree!" >&2
             exit 1
           fi
@@ -147,14 +151,20 @@ jobs:
           java-version: '21'
           cache: 'maven'
 
+      - name: Ensure Maven wrapper is executable
+        run: chmod +x ./mvnw
+
       - name: Initialize PostgreSQL Role and Sentinel
+        env:
+          PGHOST: "127.0.0.1"
+          PGPORT: "55432"
+          POSTGRES_USER: ci_bootstrap_admin
+          POSTGRES_DB: hireflow_cap8_it
+          APP_DB_USER: hireflow_cap8_app
+          APP_DB_PASSWORD: ci_runtime_app_secret_pass
+          PGPASSWORD: ci_bootstrap_secret_pass
         run: |
           chmod +x infra/cap8-integration/init/01-init-role-and-db.sh
-          POSTGRES_USER=ci_bootstrap_admin \
-          POSTGRES_DB=hireflow_cap8_it \
-          APP_DB_USER=hireflow_cap8_app \
-          APP_DB_PASSWORD=ci_runtime_app_secret_pass \
-          PGPASSWORD=ci_bootstrap_secret_pass \
           ./infra/cap8-integration/init/01-init-role-and-db.sh
 
       - name: Install root classes module

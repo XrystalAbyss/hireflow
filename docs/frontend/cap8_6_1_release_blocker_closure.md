@@ -72,7 +72,7 @@ A machine-derived audit of `git status --porcelain=v1` establishes the exact cla
 Official PostgreSQL Docker images do not interpolate environment variables within raw `.sql` files mounted to `/docker-entrypoint-initdb.d/`.
 
 **Remediation Executed:**
-1. Deleted insecure file `infra/cap8-integration/init/01-init-role-and-db.sql` which contained literal hardcoded password `hireflow_it_app_secret_2026`.
+1. Deleted insecure file `infra/cap8-integration/init/01-init-role-and-db.sql` which contained literal hardcoded password `<REDACTED_APP_SECRET_2026>`.
 2. Authored POSIX `/bin/bash` initialization script `infra/cap8-integration/init/01-init-role-and-db.sh`:
    - Checks `APP_DB_PASSWORD_FILE` (Docker secrets convention) or `APP_DB_PASSWORD`.
    - Fails closed with exit code 1 if no password is provided.
@@ -102,7 +102,7 @@ Redacted plaintext credentials from:
 - `docs/frontend/cap8_6_release_preflight_report.md`
 
 ### 3.5 Verification Scan
-Repository-wide regex scan for past secrets (`hireflow_it_app_secret_2026`, `hireflow_bootstrap_admin_secret`) executed across all tracked and untracked files: **0 occurrences found.**
+Repository-wide regex scan for past secrets (`<REDACTED_APP_SECRET_2026>`, `<REDACTED_BOOTSTRAP_SECRET>`) executed across all tracked and untracked files: **0 occurrences found.**
 
 ---
 
