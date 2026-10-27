@@ -1,0 +1,92 @@
+@import "tailwindcss";
+@import "./styles/tokens.css";
+
+@theme {
+  --color-midnight-950: #0a1723;
+  --color-midnight-900: #102131;
+  --color-midnight-800: #17324b;
+  --color-midnight-700: #204566;
+  --color-midnight-600: #2c5a82;
+
+  --color-teal-900: #0d3e3d;
+  --color-teal-800: #125553;
+  --color-teal-700: #176b69;
+  --color-teal-600: #1e8785;
+  --color-teal-500: #28a5a2;
+  --color-teal-100: #d6eeed;
+  --color-teal-50: #eef8f8;
+
+  --color-ivory-900: #38352b;
+  --color-ivory-800: #555041;
+  --color-ivory-700: #7b7561;
+  --color-ivory-300: #ddd8cb;
+  --color-ivory-200: #e8e4d8;
+  --color-ivory-100: #f0ece1;
+  --color-ivory-50: #f6f4ee;
+
+  --color-brass-800: #7d6439;
+  --color-brass-700: #9e804c;
+  --color-brass-600: #c6a46b;
+  --color-brass-500: #d8ba84;
+  --color-brass-100: #f5eedf;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --font-serif: "Newsreader", Georgia, Cambria, serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Accessible focus ring style */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+@keyframes hireflow-auth-enter {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.auth-enter, .auth-step {
+  animation: hireflow-auth-enter 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes hireflow-page-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hireflow-page-enter {
+  animation: hireflow-page-enter 180ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-enter, .auth-step, .hireflow-page-enter { animation: none; }
+}

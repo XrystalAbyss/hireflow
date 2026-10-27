@@ -1,0 +1,39 @@
+# ==============================================================================
+# HireFlow CAP-8.5.2 Dedicated Isolated PostgreSQL 16 Integration Environment
+# ==============================================================================
+# Authoritative Safety Guarantees:
+# 1. Publishes strictly to 127.0.0.1:55432 (never 0.0.0.0, never port 5432).
+# 2. Uses dedicated named Docker volume 'hireflow_cap8_it_pgdata'.
+# 3. Mounts initialization SQL to provision restricted non-superuser role 'hireflow_cap8_app'.
+# 4. Completely isolated from any host PostgreSQL instance or other project databases.
+# ==============================================================================
+
+name: hireflow-cap8-it
+
+services:
+  hireflow-cap8-postgres:
+    container_name: hireflow-cap8-postgres
+    image: postgres:16
+    restart: "no"
+    ports:
+      - "127.0.0.1:55432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_BOOTSTRAP_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_BOOTSTRAP_PASSWORD:?POSTGRES_BOOTSTRAP_PASSWORD is required}
+      POSTGRES_DB: hireflow_cap8_it
+      APP_DB_USER: ${HIREFLOW_IT_APP_USER:-hireflow_cap8_app}
+      APP_DB_PASSWORD: ${HIREFLOW_IT_APP_PASSWORD:?HIREFLOW_IT_APP_PASSWORD is required}
+      APP_DB_PASSWORD_FILE: ${HIREFLOW_IT_APP_PASSWORD_FILE:-}
+    volumes:
+      - hireflow_cap8_it_pgdata:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_BOOTSTRAP_USER:-postgres} -d hireflow_cap8_it"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+volumes:
+  hireflow_cap8_it_pgdata:
+    name: hireflow_cap8_it_pgdata

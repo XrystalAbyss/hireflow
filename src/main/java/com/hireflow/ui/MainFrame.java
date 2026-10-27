@@ -1,8 +1,8 @@
 package com.hireflow.ui;
 
+import com.hireflow.context.ApplicationContext;
 import com.hireflow.model.*;
 import com.hireflow.repository.*;
-import com.hireflow.scheduler.GreedyScheduler;
 import com.hireflow.scheduler.SchedulingEngine;
 import com.hireflow.service.*;
 
@@ -14,12 +14,15 @@ import javax.swing.border.MatteBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.time.LocalDateTime;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
- * Main application window for HireFlow Stage 1 Desktop Prototype.
+ * Main application window for HireFlow Desktop Interface.
+ * Supports both In-Memory (Stage 1) and PostgreSQL (Stage 2B) storage modes.
  * Provides sidebar navigation, responsive card-based screen switching,
  * real-time synchronization across panels, and status bar metrics.
  */
@@ -30,6 +33,10 @@ public class MainFrame extends JFrame {
     public static final String SCREEN_DRIVES = "DRIVES";
     public static final String SCREEN_APPLICATIONS = "APPLICATIONS";
     public static final String SCREEN_SCHEDULE = "SCHEDULE";
+    public static final String SCREEN_NETWORKING = "NETWORKING";
+
+    // Application context and mode
+    private final ApplicationContext applicationContext;
 
     // Repositories
     private final StudentRepository studentRepository;
@@ -45,6 +52,7 @@ public class MainFrame extends JFrame {
     private final RecruitmentDriveService driveService;
     private final EligibilityService eligibilityService;
     private final ApplicationService applicationService;
+    private final InterviewService interviewService;
     private final SchedulingEngine schedulingEngine;
 
     // UI Panels
@@ -55,14 +63,36 @@ public class MainFrame extends JFrame {
     private CompanyDrivePanel companyDrivePanel;
     private ApplicationPanel applicationPanel;
     private SchedulePanel schedulePanel;
+    private NetworkingPanel networkingPanel;
 
     // Sidebar navigation buttons
     private final Map<String, JButton> navButtons = new HashMap<>();
     private String currentScreen = SCREEN_DASHBOARD;
+    private JButton btnReloadData;
 
     // Status bar labels
     private JLabel statusMessageLabel;
     private JLabel statusStatsLabel;
+    private JLabel statusStorageLabel;
+
+    public MainFrame(ApplicationContext context) {
+        this(
+                Objects.requireNonNull(context, "ApplicationContext cannot be null").getStudentRepository(),
+                context.getCompanyRepository(),
+                context.getDriveRepository(),
+                context.getApplicationRepository(),
+                context.getInterviewerRepository(),
+                context.getRoomRepository(),
+                context.getSessionRepository(),
+                context.getStudentService(),
+                context.getDriveService(),
+                context.getEligibilityService(),
+                context.getApplicationService(),
+                context.getSchedulingEngine(),
+                context.getInterviewService(),
+                context
+        );
+    }
 
     public MainFrame(StudentRepository studentRepository,
                      CompanyRepository companyRepository,
@@ -76,7 +106,30 @@ public class MainFrame extends JFrame {
                      EligibilityService eligibilityService,
                      ApplicationService applicationService,
                      SchedulingEngine schedulingEngine) {
-        super("HireFlow - Campus Recruitment & Interview Scheduling System (Stage 1)");
+        this(
+                studentRepository, companyRepository, driveRepository,
+                applicationRepository, interviewerRepository, roomRepository,
+                sessionRepository, studentService, driveService,
+                eligibilityService, applicationService, schedulingEngine,
+                null, null
+        );
+    }
+
+    public MainFrame(StudentRepository studentRepository,
+                     CompanyRepository companyRepository,
+                     DriveRepository driveRepository,
+                     ApplicationRepository applicationRepository,
+                     InterviewerRepository interviewerRepository,
+                     RoomRepository roomRepository,
+                     InterviewSessionRepository sessionRepository,
+                     StudentService studentService,
+                     RecruitmentDriveService driveService,
+                     EligibilityService eligibilityService,
+                     ApplicationService applicationService,
+                     SchedulingEngine schedulingEngine,
+                     InterviewService interviewService,
+                     ApplicationContext applicationContext) {
+        super(resolveWindowTitle(applicationContext));
 
         this.studentRepository = studentRepository;
         this.companyRepository = companyRepository;
@@ -92,10 +145,34 @@ public class MainFrame extends JFrame {
         this.applicationService = applicationService;
         this.schedulingEngine = schedulingEngine;
 
+        this.applicationContext = applicationContext;
+        this.interviewService = (interviewService != null)
+                ? interviewService
+                : new InterviewService(sessionRepository, applicationRepository, applicationService);
+
         initWindow();
         initComponents();
         switchScreen(SCREEN_DASHBOARD);
         updateStatusBar();
+    }
+
+    private static String resolveWindowTitle(ApplicationContext context) {
+        if (context != null && context.getMode().isJdbc()) {
+            String db = extractDbName(context.getConfig().getJdbcUrl());
+            return "HireFlow - Campus Recruitment & Interview Scheduling System [PostgreSQL: " + db + "]";
+        }
+        return "HireFlow - Campus Recruitment & Interview Scheduling System [In-Memory Mode]";
+    }
+
+    private static String extractDbName(String jdbcUrl) {
+        if (jdbcUrl == null) return "unknown";
+        int lastSlash = jdbcUrl.lastIndexOf('/');
+        if (lastSlash != -1 && lastSlash < jdbcUrl.length() - 1) {
+            String db = jdbcUrl.substring(lastSlash + 1);
+            int q = db.indexOf('?');
+            return q != -1 ? db.substring(0, q) : db;
+        }
+        return jdbcUrl;
     }
 
     private void initWindow() {
@@ -104,6 +181,15 @@ public class MainFrame extends JFrame {
         setMinimumSize(new Dimension(1050, 680));
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
+
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                if (applicationContext != null && !applicationContext.isClosed()) {
+                    applicationContext.close();
+                }
+            }
+        });
     }
 
     private void initComponents() {
@@ -146,12 +232,6 @@ public class MainFrame extends JFrame {
                 onDataChanged
         );
 
-        InterviewService interviewService = new InterviewService(
-                sessionRepository,
-                applicationRepository,
-                applicationService
-        );
-
         schedulePanel = new SchedulePanel(
                 schedulingEngine,
                 applicationService,
@@ -161,15 +241,18 @@ public class MainFrame extends JFrame {
                 interviewerRepository,
                 roomRepository,
                 sessionRepository,
-                interviewService,
+                this.interviewService,
                 onDataChanged
         );
+
+        networkingPanel = new NetworkingPanel(applicationContext != null ? applicationContext : ApplicationContext.createInMemory());
 
         contentContainer.add(dashboardPanel, SCREEN_DASHBOARD);
         contentContainer.add(studentPanel, SCREEN_STUDENTS);
         contentContainer.add(companyDrivePanel, SCREEN_DRIVES);
         contentContainer.add(applicationPanel, SCREEN_APPLICATIONS);
         contentContainer.add(schedulePanel, SCREEN_SCHEDULE);
+        contentContainer.add(networkingPanel, SCREEN_NETWORKING);
 
         add(contentContainer, BorderLayout.CENTER);
 
@@ -188,7 +271,7 @@ public class MainFrame extends JFrame {
         studentService.addEventListener(eventLogger);
         driveService.addEventListener(eventLogger);
         applicationService.addEventListener(eventLogger);
-        interviewService.addEventListener(eventLogger);
+        this.interviewService.addEventListener(eventLogger);
     }
 
     private JPanel createSidebar() {
@@ -242,6 +325,7 @@ public class MainFrame extends JFrame {
         addNavButton(navList, SCREEN_DRIVES, "  Companies & Drives", "Manage drives & partners");
         addNavButton(navList, SCREEN_APPLICATIONS, "  Applications", "Eligibility & candidate pipeline");
         addNavButton(navList, SCREEN_SCHEDULE, "  Interview Scheduler", "Greedy allocation engine");
+        addNavButton(navList, SCREEN_NETWORKING, "  Networking", "TCP Server & live broadcasts");
 
         sidebar.add(navList, BorderLayout.CENTER);
 
@@ -250,7 +334,7 @@ public class MainFrame extends JFrame {
         bottomPanel.setOpaque(false);
         bottomPanel.setBorder(new EmptyBorder(16, 14, 16, 14));
 
-        JButton btnReloadData = new JButton("Reset Demo Data");
+        btnReloadData = new JButton("Reset Demo Data");
         btnReloadData.setFont(UIUtils.FONT_BOLD);
         btnReloadData.setForeground(new Color(226, 232, 240));
         btnReloadData.setBackground(new Color(30, 41, 59));
@@ -262,19 +346,32 @@ public class MainFrame extends JFrame {
         btnReloadData.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnReloadData.addActionListener(e -> handleResetDemoData());
 
+        if (applicationContext != null && applicationContext.getMode().isJdbc()) {
+            btnReloadData.setEnabled(false);
+            btnReloadData.setText("Demo Reset (In-Memory Only)");
+            btnReloadData.setToolTipText("Demo data reset is disabled in PostgreSQL mode to protect persistent database records.");
+        }
+
         btnReloadData.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                btnReloadData.setBackground(new Color(51, 65, 85));
+                if (btnReloadData.isEnabled()) {
+                    btnReloadData.setBackground(new Color(51, 65, 85));
+                }
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
-                btnReloadData.setBackground(new Color(30, 41, 59));
+                if (btnReloadData.isEnabled()) {
+                    btnReloadData.setBackground(new Color(30, 41, 59));
+                }
             }
         });
 
-        JLabel versionLabel = new JLabel("Stage 1 Prototype • Core Java 21");
+        String verText = (applicationContext != null && applicationContext.getMode().isJdbc())
+                ? "Stage 2B • PostgreSQL (" + extractDbName(applicationContext.getConfig().getJdbcUrl()) + ")"
+                : "Stage 2B • In-Memory Mode";
+        JLabel versionLabel = new JLabel(verText);
         versionLabel.setFont(UIUtils.FONT_SMALL);
         versionLabel.setForeground(new Color(100, 116, 139));
         versionLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -346,6 +443,10 @@ public class MainFrame extends JFrame {
             }
         }
 
+        if (SCREEN_NETWORKING.equals(screenKey) && networkingPanel != null) {
+            networkingPanel.refreshMetrics();
+        }
+
         updateStatusBar();
     }
 
@@ -366,13 +467,20 @@ public class MainFrame extends JFrame {
         statusStatsLabel.setFont(UIUtils.FONT_SMALL);
         statusStatsLabel.setForeground(UIUtils.TEXT_MUTED);
 
-        JLabel techLabel = new JLabel("Event Dispatch Thread Active | Java 21");
-        techLabel.setFont(UIUtils.FONT_SMALL);
-        techLabel.setForeground(UIUtils.TEXT_MUTED);
+        String storageText = applicationContext != null
+                ? applicationContext.getSafeDiagnosticInfo()
+                : "Mode: IN_MEMORY | Repositories: 7 In-Memory | Active";
+        statusStorageLabel = new JLabel(storageText);
+        statusStorageLabel.setFont(UIUtils.FONT_SMALL);
+        if (applicationContext != null && applicationContext.getMode().isJdbc()) {
+            statusStorageLabel.setForeground(new Color(16, 185, 129));
+        } else {
+            statusStorageLabel.setForeground(UIUtils.TEXT_MUTED);
+        }
 
         bar.add(statusMessageLabel, BorderLayout.WEST);
         bar.add(statusStatsLabel, BorderLayout.CENTER);
-        bar.add(techLabel, BorderLayout.EAST);
+        bar.add(statusStorageLabel, BorderLayout.EAST);
 
         return bar;
     }
@@ -383,6 +491,9 @@ public class MainFrame extends JFrame {
         companyDrivePanel.refreshAll();
         applicationPanel.refreshAll();
         schedulePanel.refreshConfirmedTable();
+        if (networkingPanel != null) {
+            networkingPanel.refreshMetrics();
+        }
         updateStatusBar();
     }
 
@@ -398,6 +509,16 @@ public class MainFrame extends JFrame {
     }
 
     private void handleResetDemoData() {
+        if (applicationContext != null && applicationContext.getMode().isJdbc()) {
+            UIUtils.showWarning(
+                    this,
+                    "Demo data reset is disabled in PostgreSQL mode to protect persistent database records.\n" +
+                            "To start with fresh sample data, run in IN_MEMORY mode or use test database tools.",
+                    "Reset Prohibited"
+            );
+            return;
+        }
+
         int confirm = JOptionPane.showConfirmDialog(
                 this,
                 "Resetting demo data will restore standard seed students, companies, recruitment drives, and applications.\n" +
@@ -460,5 +581,33 @@ public class MainFrame extends JFrame {
             appService.shortlistApplication(a5.getId());
         } catch (Exception ignored) {
         }
+    }
+
+    public NetworkingPanel getNetworkingPanel() {
+        return networkingPanel;
+    }
+
+    public DashboardPanel getDashboardPanel() {
+        return dashboardPanel;
+    }
+
+    public StudentPanel getStudentPanel() {
+        return studentPanel;
+    }
+
+    public CompanyDrivePanel getCompanyDrivePanel() {
+        return companyDrivePanel;
+    }
+
+    public ApplicationPanel getApplicationPanel() {
+        return applicationPanel;
+    }
+
+    public SchedulePanel getSchedulePanel() {
+        return schedulePanel;
+    }
+
+    public String getCurrentScreen() {
+        return currentScreen;
     }
 }

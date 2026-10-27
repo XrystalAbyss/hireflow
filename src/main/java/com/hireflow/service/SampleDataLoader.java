@@ -54,6 +54,20 @@ public class SampleDataLoader {
         seedRooms();
     }
 
+    /**
+     * Seeds sample data only if the repository dataset is currently empty.
+     * Safe for development database initialization without duplicate records or destructive wipes.
+     *
+     * @return true if seeding was executed, false if skipped because records already exist
+     */
+    public boolean seedIfEmpty() {
+        if (studentRepository.count() == 0 && companyRepository.count() == 0) {
+            seedAll();
+            return true;
+        }
+        return false;
+    }
+
     public void seedCompanies() {
         companyRepository.save(new Company("CMP-001", "Google Cloud", "Cloud Computing & AI"));
         companyRepository.save(new Company("CMP-002", "Microsoft", "Enterprise Software & Cloud"));

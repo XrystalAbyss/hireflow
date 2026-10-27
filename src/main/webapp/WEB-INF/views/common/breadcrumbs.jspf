@@ -1,0 +1,19 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<c:if test="${not empty breadcrumbCurrent}">
+    <nav class="breadcrumb-container" aria-label="Breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="${pageContext.request.contextPath}/">Home</a>
+            </li>
+            <c:if test="${not empty breadcrumbParent}">
+                <li class="breadcrumb-item">
+                    <a href="${breadcrumbParentUrl}"><c:out value="${breadcrumbParent}"/></a>
+                </li>
+            </c:if>
+            <li class="breadcrumb-item active" aria-current="page">
+                <c:out value="${breadcrumbCurrent}"/>
+            </li>
+        </ol>
+    </nav>
+</c:if>

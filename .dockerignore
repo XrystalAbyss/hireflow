@@ -1,0 +1,37 @@
+# Version control and local tooling
+.git/
+.gitignore
+.agents/
+.run/
+*.log
+hs_err_pid*
+replay_pid*
+
+# Local development credentials & state
+*.local.*
+*.secret
+.env
+.env.*
+cookies.txt
+hireflow-local.properties
+
+# Frontend build artifacts & dependencies
+hireflow-app/node_modules/
+hireflow-app/dist/
+hireflow-app/.vite/
+
+# Java build artifacts & caches
+target/
+hireflow-api/target/
+.mvn/wrapper/maven-wrapper.jar.cache/
+
+# IDE artifacts
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# Temporary documentation and scratch logs
+docs/temp/

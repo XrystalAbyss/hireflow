@@ -1,0 +1,67 @@
+# ==============================================================================
+# HireFlow Spring Boot REST API — Production Multi-Stage Dockerfile
+# Base: Eclipse Temurin Java 21 (LTS)
+# Security: Non-root user, minimal runtime footprint, no baked secrets
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Stage 1: Build & Package
+# ------------------------------------------------------------------------------
+FROM eclipse-temurin:21-jdk-jammy AS builder
+
+WORKDIR /build
+
+# 1. Cache Maven Wrapper and POM descriptors
+COPY .mvn/ .mvn/
+COPY mvnw pom.xml ./
+COPY hireflow-api/pom.xml hireflow-api/
+
+# Make Maven wrapper executable
+RUN chmod +x mvnw
+
+# 2. Pre-fetch dependencies where possible to optimize build caching
+RUN ./mvnw -B dependency:resolve-plugins dependency:resolve -q || true
+
+# 3. Copy source trees
+COPY src/ src/
+COPY hireflow-api/src/ hireflow-api/src/
+
+# 4. Build and install root module classes, then package the Spring Boot API executable
+RUN ./mvnw -B install -DskipTests -q && \
+    ./mvnw -B -f hireflow-api/pom.xml package -DskipTests -q
+
+# ------------------------------------------------------------------------------
+# Stage 2: Production JRE Runtime
+# ------------------------------------------------------------------------------
+FROM eclipse-temurin:21-jre-jammy AS runner
+
+# Install curl for reliable container healthchecks
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create non-root system user and group (least privilege)
+RUN groupadd -g 10001 hireflow && \
+    useradd -u 10001 -g hireflow -m -s /bin/sh hireflow
+
+WORKDIR /app
+
+# Copy packaged JAR artifact from builder
+COPY --from=builder --chown=hireflow:hireflow /build/hireflow-api/target/hireflow-api-1.0.0.jar /app/hireflow-api.jar
+
+# Switch to non-root execution
+USER hireflow:hireflow
+
+# Default network configuration
+EXPOSE 8081
+
+# JVM Container Tuning & Default Environment
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=50.0 -Duser.timezone=UTC -Djava.security.egd=file:/dev/./urandom" \
+    PORT=8081 \
+    SPRING_PROFILES_ACTIVE=prod
+
+# Container Healthcheck against native health endpoint
+HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -fs http://127.0.0.1:8081/api/v1/health || exit 1
+
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/hireflow-api.jar"]

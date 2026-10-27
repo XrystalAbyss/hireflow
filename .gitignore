@@ -21,6 +21,7 @@ buildNumber.properties
 .classpath
 
 # Logs and runtime artifacts
+.run/
 *.log
 hs_err_pid*
 replay_pid*
@@ -29,3 +30,13 @@ replay_pid*
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Local credentials and configuration files
+*.local.properties
+hireflow-local.properties
+.env
+.env.*
+*.secret
+# Captured session cookies from manual HTTP probing must never be committed
+cookies.txt
+

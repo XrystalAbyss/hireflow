@@ -1,0 +1,35 @@
+    </main>
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div>
+                <div class="footer-brand">HireFlow Placement System</div>
+                <p class="footer-desc">
+                    Enterprise campus placement management, academic eligibility enforcement, and algorithmic interview scheduling.
+                    Powered by Jakarta EE 10, Servlets 6.0, and PostgreSQL 16 ACID transactions.
+                </p>
+            </div>
+            <div>
+                <div class="footer-col-title">Portal Navigation</div>
+                <ul class="footer-links">
+                    <li><a href="${pageContext.request.contextPath}/">Home Overview</a></li>
+                    <li><a href="${pageContext.request.contextPath}/drives">Public Drives Catalog</a></li>
+                    <li><a href="${pageContext.request.contextPath}/about">Placement Policies &amp; Rules</a></li>
+                    <li><a href="${pageContext.request.contextPath}/health" target="_blank">System Health Diagnostic</a></li>
+                </ul>
+            </div>
+            <div>
+                <div class="footer-col-title">Security &amp; Governance</div>
+                <ul class="footer-links">
+                    <li><a href="${pageContext.request.contextPath}/student/profile">Candidate Portal (Protected)</a></li>
+                    <li><a href="${pageContext.request.contextPath}/officer/dashboard">Officer Console (Protected)</a></li>
+                    <li><span style="color: #94a3b8;">Stage 3B Deny-by-Default Guard</span></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div>&copy; 2026 HireFlow Training &amp; Placement Cell. All rights reserved.</div>
+            <div class="footer-badge">Jakarta Servlet 6.0 | Apache Tomcat 10.1</div>
+        </div>
+    </footer>
+</body>
+</html>

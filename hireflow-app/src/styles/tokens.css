@@ -1,0 +1,86 @@
+/* HireFlow Design System Tokens - Institutional x Contemporary */
+
+:root {
+  /* Surface & Base Ground */
+  --background: #f6f4ee;
+  --foreground: #111e2e;
+
+  /* Card & Surface Panels */
+  --card: #ffffff;
+  --card-foreground: #111e2e;
+
+  /* Popover & Flyouts */
+  --popover: #ffffff;
+  --popover-foreground: #111e2e;
+
+  /* Primary Brand: Midnight Navy #17324B */
+  --primary: #17324b;
+  --primary-foreground: #f6f4ee;
+  --primary-hover: #102438;
+
+  /* Secondary Neutral: Subtle Ivory Surface */
+  --secondary: #ece8dc;
+  --secondary-foreground: #17324b;
+  --secondary-hover: #e2ddd0;
+
+  /* Accent: Academic Teal #176B69 */
+  --accent: #176b69;
+  --accent-foreground: #ffffff;
+  --accent-hover: #125553;
+
+  /* Muted Surface & Text */
+  --muted: #ebe7db;
+  --muted-foreground: #55606e;
+
+  /* Muted Brass Accent: #C6A46B */
+  --brass: #c6a46b;
+  --brass-foreground: #382c16;
+
+  /* Structural Borders & Inputs */
+  --border: #ddd8cb;
+  --input: #ddd8cb;
+  --input-focus: #176b69;
+  --ring: #176b69;
+
+  /* Semantic Status: Confirmed / Scheduled */
+  --status-confirmed-bg: #edf7f4;
+  --status-confirmed-text: #0d5447;
+  --status-confirmed-border: #9fd5c7;
+
+  /* Semantic Status: Shortlisted / Pending */
+  --status-shortlisted-bg: #fdf6e8;
+  --status-shortlisted-text: #7c550e;
+  --status-shortlisted-border: #e8cf96;
+
+  /* Semantic Status: Applied */
+  --status-applied-bg: #f0f4f8;
+  --status-applied-text: #173b5e;
+  --status-applied-border: #bdd1e4;
+
+  /* Semantic Status: Conflict / Rejected / Closed */
+  --status-rejected-bg: #fdf1f1;
+  --status-rejected-text: #8e1b1b;
+  --status-rejected-border: #f5aaaa;
+
+  /* Radii - Crisp Architectural Geometry */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* Shadows - Layered Elevation without Muddy Halos */
+  --shadow-subtle: 0 1px 2px 0 rgb(17 30 46 / 0.05);
+  --shadow-card: 0 1px 3px 0 rgb(17 30 46 / 0.08), 0 4px 12px -2px rgb(17 30 46 / 0.04);
+  --shadow-dialog: 0 8px 30px -4px rgb(17 30 46 / 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

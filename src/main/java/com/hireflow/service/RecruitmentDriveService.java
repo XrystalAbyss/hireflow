@@ -53,11 +53,19 @@ public class RecruitmentDriveService {
 
     private void publishEvent(HireFlowEventType type, String sourceId, String message) {
         HireFlowEvent event = new HireFlowEvent(type, sourceId, message);
-        for (HireFlowEventListener listener : eventListeners) {
-            try {
-                listener.onEvent(event);
-            } catch (Exception ignored) {
+        Runnable dispatch = () -> {
+            for (HireFlowEventListener listener : eventListeners) {
+                try {
+                    listener.onEvent(event);
+                } catch (Exception ignored) {
+                }
             }
+        };
+
+        if (com.hireflow.db.TransactionManager.isCurrentTransactionActive()) {
+            com.hireflow.db.TransactionManager.registerPostCommitAction(dispatch);
+        } else {
+            dispatch.run();
         }
     }
 
@@ -109,6 +117,16 @@ public class RecruitmentDriveService {
         if (!companyRepository.existsById(drive.getCompanyId())) {
             throw new EntityNotFoundException("Company ID '" + drive.getCompanyId() + "' not found.");
         }
+        return driveRepository.update(drive);
+    }
+
+    public RecruitmentDrive closeDrive(String id) {
+        if (id == null || id.trim().isEmpty()) {
+            throw new ValidationException("Recruitment Drive ID cannot be null or empty.");
+        }
+        String normId = id.trim().toUpperCase();
+        RecruitmentDrive drive = getDriveOrThrow(normId);
+        drive.setClosed(true);
         return driveRepository.update(drive);
     }
 

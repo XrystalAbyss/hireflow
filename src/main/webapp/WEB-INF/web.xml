@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
+                             https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+
+    <display-name>HireFlow - Campus Recruitment &amp; Placement Portal</display-name>
+    <description>
+        HireFlow Stage 3B (CAP-6) Jakarta EE Web Application.
+        Provides MVC architecture, reusable JSP layouts, public recruitment drive catalog,
+        and deny-by-default protected portal boundaries.
+    </description>
+
+    <!-- Context Lifecycle Listener -->
+    <listener>
+        <listener-class>com.hireflow.web.listener.WebContextListener</listener-class>
+    </listener>
+
+    <!-- Global Security Headers and Character Encoding Filter -->
+    <filter>
+        <filter-name>SecurityHeadersFilter</filter-name>
+        <filter-class>com.hireflow.web.filter.SecurityHeadersFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>SecurityHeadersFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <!-- Protected Portal Deny-by-Default Authorization Filter -->
+    <filter>
+        <filter-name>PortalAuthorizationFilter</filter-name>
+        <filter-class>com.hireflow.web.filter.PortalAuthorizationFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>PortalAuthorizationFilter</filter-name>
+        <url-pattern>/student/*</url-pattern>
+    </filter-mapping>
+    <filter-mapping>
+        <filter-name>PortalAuthorizationFilter</filter-name>
+        <url-pattern>/officer/*</url-pattern>
+    </filter-mapping>
+
+    <!-- Static Resource Mapping to Container DefaultServlet -->
+    <servlet-mapping>
+        <servlet-name>default</servlet-name>
+        <url-pattern>/static/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Home Controller (Landing Page) -->
+    <servlet>
+        <servlet-name>HomeController</servlet-name>
+        <servlet-class>com.hireflow.web.controller.HomeController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>HomeController</servlet-name>
+        <url-pattern>/home</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>HomeController</servlet-name>
+        <url-pattern>/</url-pattern>
+    </servlet-mapping>
+
+    <!-- Public Recruitment Drive Catalog Controller -->
+    <servlet>
+        <servlet-name>DriveController</servlet-name>
+        <servlet-class>com.hireflow.web.controller.DriveController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>DriveController</servlet-name>
+        <url-pattern>/drives</url-pattern>
+    </servlet-mapping>
+
+    <!-- Informational About Controller -->
+    <servlet>
+        <servlet-name>AboutController</servlet-name>
+        <servlet-class>com.hireflow.web.controller.AboutController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AboutController</servlet-name>
+        <url-pattern>/about</url-pattern>
+    </servlet-mapping>
+
+    <!-- Health Check Controller -->
+    <servlet>
+        <servlet-name>HealthController</servlet-name>
+        <servlet-class>com.hireflow.web.controller.HealthController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>HealthController</servlet-name>
+        <url-pattern>/health</url-pattern>
+    </servlet-mapping>
+
+    <!-- Login Controller (Authentication & Session Establishment) -->
+    <servlet>
+        <servlet-name>LoginController</servlet-name>
+        <servlet-class>com.hireflow.web.controller.LoginController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>LoginController</servlet-name>
+        <url-pattern>/login</url-pattern>
+    </servlet-mapping>
+
+    <!-- Logout Controller (Session Invalidation & Cookie Clearing) -->
+    <servlet>
+        <servlet-name>LogoutController</servlet-name>
+        <servlet-class>com.hireflow.web.controller.LogoutController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>LogoutController</servlet-name>
+        <url-pattern>/logout</url-pattern>
+    </servlet-mapping>
+
+    <!-- Authenticated Student Dashboard -->
+    <servlet>
+        <servlet-name>StudentDashboardController</servlet-name>
+        <servlet-class>com.hireflow.web.controller.StudentDashboardController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>StudentDashboardController</servlet-name>
+        <url-pattern>/student/dashboard</url-pattern>
+    </servlet-mapping>
+
+    <!-- Authenticated Student Profile -->
+    <servlet>
+        <servlet-name>StudentProfileController</servlet-name>
+        <servlet-class>com.hireflow.web.controller.StudentProfileController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>StudentProfileController</servlet-name>
+        <url-pattern>/student/profile</url-pattern>
+    </servlet-mapping>
+
+    <!-- Authenticated Student Drives Directory & Eligibility -->
+    <servlet>
+        <servlet-name>StudentDriveController</servlet-name>
+        <servlet-class>com.hireflow.web.controller.StudentDriveController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>StudentDriveController</servlet-name>
+        <url-pattern>/student/drives</url-pattern>
+    </servlet-mapping>
+
+    <!-- Authenticated Student Applications Management & Submission -->
+    <servlet>
+        <servlet-name>StudentApplicationController</servlet-name>
+        <servlet-class>com.hireflow.web.controller.StudentApplicationController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>StudentApplicationController</servlet-name>
+        <url-pattern>/student/applications</url-pattern>
+    </servlet-mapping>
+
+    <!-- Authenticated Student Confirmed Interview Timetable -->
+    <servlet>
+        <servlet-name>StudentInterviewController</servlet-name>
+        <servlet-class>com.hireflow.web.controller.StudentInterviewController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>StudentInterviewController</servlet-name>
+        <url-pattern>/student/interviews</url-pattern>
+    </servlet-mapping>
+
+    <!-- Authenticated Placement Officer Dashboard -->
+    <servlet>
+        <servlet-name>OfficerDashboardController</servlet-name>
+        <servlet-class>com.hireflow.web.controller.OfficerDashboardController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>OfficerDashboardController</servlet-name>
+        <url-pattern>/officer/dashboard</url-pattern>
+    </servlet-mapping>
+
+    <!-- Authenticated Placement Officer Company Management -->
+    <servlet>
+        <servlet-name>OfficerCompanyController</servlet-name>
+        <servlet-class>com.hireflow.web.controller.OfficerCompanyController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>OfficerCompanyController</servlet-name>
+        <url-pattern>/officer/companies</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>OfficerCompanyController</servlet-name>
+        <url-pattern>/officer/companies/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Authenticated Placement Officer Recruitment Drive Management -->
+    <servlet>
+        <servlet-name>OfficerDriveController</servlet-name>
+        <servlet-class>com.hireflow.web.controller.OfficerDriveController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>OfficerDriveController</servlet-name>
+        <url-pattern>/officer/drives</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>OfficerDriveController</servlet-name>
+        <url-pattern>/officer/drives/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Authenticated Placement Officer Applications & Shortlisting Management -->
+    <servlet>
+        <servlet-name>OfficerApplicationController</servlet-name>
+        <servlet-class>com.hireflow.web.controller.OfficerApplicationController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>OfficerApplicationController</servlet-name>
+        <url-pattern>/officer/applications</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>OfficerApplicationController</servlet-name>
+        <url-pattern>/officer/applications/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Authenticated Placement Officer Interviewer Resource Management -->
+    <servlet>
+        <servlet-name>OfficerInterviewerController</servlet-name>
+        <servlet-class>com.hireflow.web.controller.OfficerInterviewerController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>OfficerInterviewerController</servlet-name>
+        <url-pattern>/officer/interviewers</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>OfficerInterviewerController</servlet-name>
+        <url-pattern>/officer/interviewers/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Authenticated Placement Officer Room Resource Management -->
+    <servlet>
+        <servlet-name>OfficerRoomController</servlet-name>
+        <servlet-class>com.hireflow.web.controller.OfficerRoomController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>OfficerRoomController</servlet-name>
+        <url-pattern>/officer/rooms</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>OfficerRoomController</servlet-name>
+        <url-pattern>/officer/rooms/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Authenticated Placement Officer Automated Scheduling & Preview -->
+    <servlet>
+        <servlet-name>OfficerSchedulingController</servlet-name>
+        <servlet-class>com.hireflow.web.controller.OfficerSchedulingController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>OfficerSchedulingController</servlet-name>
+        <url-pattern>/officer/scheduling</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>OfficerSchedulingController</servlet-name>
+        <url-pattern>/officer/scheduling/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Protected Portal Catch-all Handlers -->
+    <servlet>
+        <servlet-name>ProtectedPortalController</servlet-name>
+        <servlet-class>com.hireflow.web.controller.ProtectedPortalController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ProtectedPortalController</servlet-name>
+        <url-pattern>/student/*</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ProtectedPortalController</servlet-name>
+        <url-pattern>/officer/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Secure Session Configuration -->
+    <session-config>
+        <session-timeout>30</session-timeout>
+        <cookie-config>
+            <http-only>true</http-only>
+            <secure>false</secure>
+        </cookie-config>
+        <tracking-mode>COOKIE</tracking-mode>
+    </session-config>
+
+    <!-- Standard Error Pages (Sanitized, No Raw Stack Traces) -->
+    <error-page>
+        <error-code>400</error-code>
+        <location>/WEB-INF/views/error.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>403</error-code>
+        <location>/WEB-INF/views/error.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>404</error-code>
+        <location>/WEB-INF/views/error.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>500</error-code>
+        <location>/WEB-INF/views/error.jsp</location>
+    </error-page>
+    <error-page>
+        <exception-type>java.lang.Throwable</exception-type>
+        <location>/WEB-INF/views/error.jsp</location>
+    </error-page>
+
+    <!-- Welcome File -->
+    <welcome-file-list>
+        <welcome-file>home</welcome-file>
+    </welcome-file-list>
+
+</web-app>

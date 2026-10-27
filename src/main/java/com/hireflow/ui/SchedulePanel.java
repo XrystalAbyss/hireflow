@@ -355,38 +355,56 @@ public class SchedulePanel extends JPanel {
             return;
         }
 
-        int bufferMins = (Integer) bufferSpinner.getValue();
-        if (interviewService != null) {
-            InterviewService.PublicationResult pubResult = interviewService.publishSchedule(
-                    lastResult.getScheduledSessions(), Duration.ofMinutes(bufferMins)
-            );
-
-            if (pubResult.publishedCount() > 0) {
-                String msg = "Successfully confirmed and published " + pubResult.publishedCount() + " interview appointment(s).";
-                if (!pubResult.skippedDuplicateApplicationIds().isEmpty()) {
-                    msg += "\n" + pubResult.skippedDuplicateApplicationIds().size() + " duplicate appointment(s) were skipped.";
-                }
-                UIUtils.showSuccess(this, msg, "Schedule Published");
-            } else if (!pubResult.skippedDuplicateApplicationIds().isEmpty()) {
-                UIUtils.showWarning(this, "All proposed sessions have already been published. No duplicate appointments created.", "Already Published");
-            } else if (pubResult.hasConflicts()) {
-                UIUtils.showError(this, "Could not publish due to conflicts:\n" + String.join("\n", pubResult.conflictRejections()), "Publication Conflict");
-            }
-        } else {
-            // Fallback if interviewService is null
-            for (InterviewSession session : lastResult.getScheduledSessions()) {
-                sessionRepository.save(session);
-                try {
-                    applicationService.updateStatus(session.getApplicationId(), ApplicationStatus.SCHEDULED,
-                            "Interview scheduled for " + session.getStartTime().toLocalTime());
-                } catch (Exception ignored) {}
-            }
-            UIUtils.showSuccess(this, "Schedule published.", "Published");
-        }
-
         btnPublish.setEnabled(false);
-        refreshConfirmedTable();
-        if (onDataChanged != null) onDataChanged.run();
+        progressBar.setVisible(true);
+
+        int bufferMins = (Integer) bufferSpinner.getValue();
+        List<InterviewSession> proposedSessions = List.copyOf(lastResult.getScheduledSessions());
+
+        SwingWorker<InterviewService.PublicationResult, Void> worker = new SwingWorker<>() {
+            @Override
+            protected InterviewService.PublicationResult doInBackground() {
+                if (interviewService != null) {
+                    return interviewService.publishSchedule(proposedSessions, Duration.ofMinutes(bufferMins));
+                } else {
+                    for (InterviewSession session : proposedSessions) {
+                        sessionRepository.save(session);
+                        try {
+                            applicationService.updateStatus(session.getApplicationId(), ApplicationStatus.SCHEDULED,
+                                    "Interview scheduled for " + session.getStartTime().toLocalTime());
+                        } catch (Exception ignored) {
+                        }
+                    }
+                    return new InterviewService.PublicationResult(proposedSessions.size(), proposedSessions, List.of(), List.of());
+                }
+            }
+
+            @Override
+            protected void done() {
+                progressBar.setVisible(false);
+                try {
+                    InterviewService.PublicationResult pubResult = get();
+                    if (pubResult.publishedCount() > 0) {
+                        String msg = "Successfully confirmed and published " + pubResult.publishedCount() + " interview appointment(s).";
+                        if (!pubResult.skippedDuplicateApplicationIds().isEmpty()) {
+                            msg += "\n" + pubResult.skippedDuplicateApplicationIds().size() + " duplicate appointment(s) were skipped.";
+                        }
+                        UIUtils.showSuccess(SchedulePanel.this, msg, "Schedule Published");
+                    } else if (!pubResult.skippedDuplicateApplicationIds().isEmpty()) {
+                        UIUtils.showWarning(SchedulePanel.this, "All proposed sessions have already been published. No duplicate appointments created.", "Already Published");
+                    } else if (pubResult.hasConflicts()) {
+                        UIUtils.showError(SchedulePanel.this, "Could not publish due to conflicts:\n" + String.join("\n", pubResult.conflictRejections()), "Publication Conflict");
+                    }
+                } catch (Exception ex) {
+                    UIUtils.showError(SchedulePanel.this, "Failed to publish schedule: " + ex.getMessage(), "Publication Error");
+                } finally {
+                    refreshConfirmedTable();
+                    if (onDataChanged != null) onDataChanged.run();
+                }
+            }
+        };
+
+        worker.execute();
     }
 
     public void refreshConfirmedTable() {

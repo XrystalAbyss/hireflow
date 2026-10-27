@@ -71,4 +71,20 @@ public class InMemoryApplicationRepository extends AbstractInMemoryRepository<Ap
     public boolean existsByStudentAndDrive(String studentId, String driveId) {
         return findByStudentAndDrive(studentId, driveId).isPresent();
     }
+
+    @Override
+    public synchronized boolean updateStatusConditional(String id, ApplicationStatus expectedStatus,
+                                                        ApplicationStatus newStatus, String remarks) {
+        if (id == null) return false;
+        String normId = id.trim().toUpperCase();
+        Application app = store.get(normId);
+        if (app == null || app.getStatus() != expectedStatus) {
+            return false;
+        }
+        app.setStatus(newStatus);
+        if (remarks != null) {
+            app.setRemarks(remarks.trim());
+        }
+        return true;
+    }
 }
