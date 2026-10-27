@@ -27,7 +27,7 @@ export const OfficerCompanyDetailSchema = z.object({
 })
 
 export const PagedOfficerCompanyResponseSchema = z.object({
-  content: z.array(OfficerCompanyDetailSchema),
+  content: z.array(OfficerCompanyDetailSchema).max(500),
   page: z.number().int().nonnegative(),
   size: z.number().int().positive(),
   totalElements: z.number().int().nonnegative(),
@@ -72,9 +72,9 @@ export const OfficerDriveDetailSchema = z.object({
   companyName: z.string().min(1),
   jobTitle: z.string().min(1).max(100),
   minimumCgpa: z.number().min(0.0).max(10.0),
-  eligibleBranches: z.union([z.array(z.string()), z.set(z.string())]).transform((val) =>
-    Array.isArray(val) ? val : Array.from(val)
-  ),
+  eligibleBranches: z
+    .union([z.array(z.string().min(1).max(50)).max(50), z.set(z.string().min(1).max(50)).max(50)])
+    .transform((val) => (Array.isArray(val) ? val : Array.from(val))),
   applicationDeadline: LocalDateSchema,
   closed: z.boolean(),
   totalApplications: z.number().int().nonnegative(),
@@ -82,7 +82,7 @@ export const OfficerDriveDetailSchema = z.object({
 })
 
 export const PagedOfficerDriveResponseSchema = z.object({
-  content: z.array(OfficerDriveDetailSchema),
+  content: z.array(OfficerDriveDetailSchema).max(500),
   page: z.number().int().nonnegative(),
   size: z.number().int().positive(),
   totalElements: z.number().int().nonnegative(),
@@ -105,12 +105,13 @@ export const OfficerDriveCreateSchema = z.object({
     .min(1, 'Job title is required')
     .max(100, 'Job title cannot exceed 100 characters'),
   minimumCgpa: z
-    .number({ invalid_type_error: 'Minimum CGPA must be a valid number' })
+    .number('Minimum CGPA must be a valid number')
     .min(0.0, 'Minimum CGPA cannot be negative')
     .max(10.0, 'Minimum CGPA cannot exceed 10.0'),
   eligibleBranches: z
-    .array(z.string().min(1, 'Branch code cannot be blank'))
-    .min(1, 'Select at least one eligible branch'),
+    .array(z.string().min(1, 'Branch code cannot be blank').max(50))
+    .min(1, 'Select at least one eligible branch')
+    .max(50, 'Cannot exceed 50 eligible branches'),
   applicationDeadline: LocalDateSchema,
 })
 
@@ -120,12 +121,13 @@ export const OfficerDriveUpdateSchema = z.object({
     .min(1, 'Job title is required')
     .max(100, 'Job title cannot exceed 100 characters'),
   minimumCgpa: z
-    .number({ invalid_type_error: 'Minimum CGPA must be a valid number' })
+    .number('Minimum CGPA must be a valid number')
     .min(0.0, 'Minimum CGPA cannot be negative')
     .max(10.0, 'Minimum CGPA cannot exceed 10.0'),
   eligibleBranches: z
-    .array(z.string().min(1, 'Branch code cannot be blank'))
-    .min(1, 'Select at least one eligible branch'),
+    .array(z.string().min(1, 'Branch code cannot be blank').max(50))
+    .min(1, 'Select at least one eligible branch')
+    .max(50, 'Cannot exceed 50 eligible branches'),
   applicationDeadline: LocalDateSchema,
 })
 
@@ -149,7 +151,7 @@ export const OfficerApplicationReviewSchema = z.object({
 })
 
 export const PagedOfficerApplicationReviewResponseSchema = z.object({
-  content: z.array(OfficerApplicationReviewSchema),
+  content: z.array(OfficerApplicationReviewSchema).max(1000),
   page: z.number().int().nonnegative(),
   size: z.number().int().positive(),
   totalElements: z.number().int().nonnegative(),
@@ -169,7 +171,7 @@ export const OfficerInterviewerDetailSchema = z.object({
 })
 
 // Raw JSON Array - NOT PagedResponse!
-export const OfficerInterviewerArraySchema = z.array(OfficerInterviewerDetailSchema)
+export const OfficerInterviewerArraySchema = z.array(OfficerInterviewerDetailSchema).max(500)
 
 export const OfficerInterviewerCreateSchema = z.object({
   id: z
@@ -204,7 +206,7 @@ export const OfficerRoomDetailSchema = z.object({
 })
 
 // Raw JSON Array - NOT PagedResponse!
-export const OfficerRoomArraySchema = z.array(OfficerRoomDetailSchema)
+export const OfficerRoomArraySchema = z.array(OfficerRoomDetailSchema).max(500)
 
 export const OfficerRoomCreateSchema = z.object({
   id: z
@@ -216,7 +218,7 @@ export const OfficerRoomCreateSchema = z.object({
     .min(1, 'Room name is required')
     .max(100, 'Room name cannot exceed 100 characters'),
   capacity: z
-    .number({ invalid_type_error: 'Capacity must be a number' })
+    .number('Capacity must be a number')
     .int('Capacity must be an integer')
     .min(1, 'Room capacity must be at least 1'),
 })
@@ -227,7 +229,7 @@ export const OfficerRoomUpdateSchema = z.object({
     .min(1, 'Room name is required')
     .max(100, 'Room name cannot exceed 100 characters'),
   capacity: z
-    .number({ invalid_type_error: 'Capacity must be a number' })
+    .number('Capacity must be a number')
     .int('Capacity must be an integer')
     .min(1, 'Room capacity must be at least 1'),
 })
@@ -284,8 +286,8 @@ export const OfficerSchedulingPreviewRequestSchema = z
     endTime: LocalTimeSchema,
     durationMinutes: z.number().int().min(1).max(240).optional().default(45),
     bufferMinutes: z.number().int().min(0).max(120).optional().default(15),
-    interviewerIds: z.array(z.string().min(1)).optional(),
-    roomIds: z.array(z.string().min(1)).optional(),
+    interviewerIds: z.array(z.string().min(1)).max(200).optional(),
+    roomIds: z.array(z.string().min(1)).max(200).optional(),
   })
   .refine((data) => data.startTime < data.endTime, {
     message: 'Start time must be strictly before end time',
@@ -306,8 +308,8 @@ export const OfficerSchedulingPreviewResponseSchema = z.object({
   totalRequested: z.number().int().nonnegative(),
   totalScheduled: z.number().int().nonnegative(),
   totalUnscheduled: z.number().int().nonnegative(),
-  proposedSessions: z.array(ProposedSessionSchema),
-  unscheduledCandidates: z.array(UnscheduledCandidateSchema),
+  proposedSessions: z.array(ProposedSessionSchema).max(2000),
+  unscheduledCandidates: z.array(UnscheduledCandidateSchema).max(2000),
 })
 
 export const OfficerSchedulingPublishRequestSchema = z.object({
@@ -347,11 +349,11 @@ export const OfficerPublicationSummarySchema = z.object({
   conflictsCount: z.number().int().nonnegative(),
   errorsCount: z.number().int().nonnegative(),
   unattemptedCount: z.number().int().nonnegative(),
-  confirmedSessionIds: z.array(z.string()),
-  publishedSessions: z.array(PublishedSessionDetailSchema),
-  skippedDuplicateApplicationIds: z.array(z.string()),
-  conflictRejections: z.array(PublicationConflictDetailSchema),
-  infrastructureErrors: z.array(z.string()),
+  confirmedSessionIds: z.array(z.string().min(1).max(50)).max(2000),
+  publishedSessions: z.array(PublishedSessionDetailSchema).max(2000),
+  skippedDuplicateApplicationIds: z.array(z.string().min(1).max(50)).max(2000),
+  conflictRejections: z.array(PublicationConflictDetailSchema).max(2000),
+  infrastructureErrors: z.array(z.string()).max(500),
 })
 
 export const OfficerInterviewDetailSchema = z.object({
@@ -374,7 +376,7 @@ export const OfficerInterviewDetailSchema = z.object({
 })
 
 export const PagedOfficerInterviewDetailResponseSchema = z.object({
-  content: z.array(OfficerInterviewDetailSchema),
+  content: z.array(OfficerInterviewDetailSchema).max(1000),
   page: z.number().int().nonnegative(),
   size: z.number().int().positive(),
   totalElements: z.number().int().nonnegative(),

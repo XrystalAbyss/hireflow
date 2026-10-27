@@ -62,7 +62,7 @@ export const StudentDriveItemSchema = z.object({
   companyName: z.string().min(1),
   jobTitle: z.string().min(1),
   minimumCgpa: z.number().min(0).max(10),
-  eligibleBranches: z.array(z.string()),
+  eligibleBranches: z.array(z.string().min(1).max(50)).max(50),
   applicationDeadline: LocalDateSchema,
   closed: z.boolean(),
   deadlinePassed: z.boolean(),
@@ -72,10 +72,10 @@ export const StudentDriveItemSchema = z.object({
   academicallyEligible: z.boolean(),
   acceptingApplications: z.boolean(),
   canApply: z.boolean(),
-  eligibilityReasons: z.array(z.string()),
+  eligibilityReasons: z.array(z.string()).max(100),
 })
 
-export const StudentDriveItemArraySchema = z.array(StudentDriveItemSchema)
+export const StudentDriveItemArraySchema = z.array(StudentDriveItemSchema).max(500)
 
 export const StudentDriveEligibilitySchema = z.object({
   driveId: z.string().min(1),
@@ -88,12 +88,12 @@ export const StudentDriveEligibilitySchema = z.object({
   existingApplicationStatus: ApplicationStatusSchema.nullable(),
   minimumCgpa: z.number().min(0).max(10),
   studentCgpa: z.number().min(0).max(10),
-  eligibleBranches: z.array(z.string()),
+  eligibleBranches: z.array(z.string().min(1).max(50)).max(50),
   studentBranch: z.string().min(1),
   applicationDeadline: LocalDateSchema,
   closed: z.boolean(),
   deadlinePassed: z.boolean(),
-  reasons: z.array(z.string()),
+  reasons: z.array(z.string()).max(100),
 })
 
 export const StudentApplicationDetailSchema = z.object({
@@ -109,7 +109,7 @@ export const StudentApplicationDetailSchema = z.object({
 })
 
 export const PagedStudentApplicationResponseSchema = z.object({
-  content: z.array(StudentApplicationDetailSchema),
+  content: z.array(StudentApplicationDetailSchema).max(500),
   page: z.number().int().min(0),
   size: z.number().int().min(1),
   totalElements: z.number().int().min(0),
@@ -135,14 +135,14 @@ export const StudentInterviewSchema = z.object({
   status: ApplicationStatusSchema,
 })
 
-export const StudentInterviewArraySchema = z.array(StudentInterviewSchema)
+export const StudentInterviewArraySchema = z.array(StudentInterviewSchema).max(500)
 
 export const StudentDashboardSchema = z.object({
   profile: StudentProfileSchema,
   totalEligibleDrives: z.number().int().min(0),
   totalApplications: z.number().int().min(0),
   shortlistedCount: z.number().int().min(0),
-  recentApplications: z.array(StudentApplicationDetailSchema),
+  recentApplications: z.array(StudentApplicationDetailSchema).max(100),
 })
 
 export const ApplicationSubmitRequestSchema = z.object({

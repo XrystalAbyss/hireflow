@@ -4,7 +4,7 @@
 
 HireFlow is an end-to-end full-stack recruitment coordination platform designed for university placement teams and graduating students. It replaces fragmented spreadsheets, manual eligibility verification, and schedule collisions with a unified workflow connecting recruitment drives, eligibility rules, candidate shortlisting, venue/interviewer resource pools, deterministic interview scheduling, and transactional timetable publication.
 
-The current system combines **Java 21, Spring Boot 4.1.1, PostgreSQL 16, React 19 and TypeScript**. The repository also preserves the complete historical evolution from earlier stages—including a **Java Swing desktop client, pure JDBC infrastructure, multi-threaded TCP socket networking, and a Jakarta EE Servlet/JSP MVC portal**.
+The current system combines **Java 21, Spring Boot 4.1.1, PostgreSQL 16, React 19, TypeScript and Vite 8**. The repository also preserves the complete historical evolution from earlier stages—including a **Java Swing desktop client, pure JDBC infrastructure, multi-threaded TCP socket networking, and a Jakarta EE Servlet/JSP MVC portal**.
 
 > **Project status (October 2026):** Full-stack portfolio release and verified academic prototype. Features complete local test coverage across Core Java, Spring Boot REST, and React/Vitest suites. Designed as an independent university recruitment concept and engineering showcase; not officially deployed or adopted by an educational institution.
 
@@ -72,7 +72,7 @@ Placement officers administer employer profiles and recruitment drives, manage i
 ```text
                ┌────────────────────────────────────────────────────────┐
                │                     Web Browser                        │
-               │        React 19 + TypeScript + Vite + Tailwind         │
+               │       React 19 + TypeScript + Vite 8 + Tailwind        │
                └───────────────────────────┬────────────────────────────┘
                                            │ HTTP / JSON (Session + CSRF)
                                            ▼
@@ -110,7 +110,7 @@ Placement officers administer employer profiles and recruitment drives, manage i
 | **Security & Auth** | Spring Security 6 / 7 | Server sessions (`JSESSIONID`), anti-fixation, `X-CSRF-TOKEN`, role RBAC |
 | **Database & Migrations** | PostgreSQL 16, Flyway | Versioned schema evolution (`V1`–`V5`), GiST temporal exclusion constraints |
 | **Data Access & Writes** | JDBC, HikariCP, Spring Data JPA | Pure JDBC for all state mutations; Hibernate in validation-only mode (`ddl-auto=validate`) |
-| **Frontend Client** | React 19, TypeScript, Vite, Tailwind CSS 4 | Single-page application, TanStack Query, React Router 7, Zod validation |
+| **Frontend Client** | React 19, TypeScript, Vite 8, Tailwind CSS 4 | Single-page application, TanStack Query, React Router 7, Zod validation |
 | **Desktop Client (Preserved)** | Java Swing, SwingWorker | Preserved Stage-1 / Stage-2 desktop management interface |
 | **Legacy Web (Preserved)** | Jakarta Servlet 6.0, JSP 3.1 | Preserved Stage-3 server-rendered MVC portal |
 | **Quality & Verification** | JUnit 5, MockMvc, Vitest, Playwright | Unit tests, MockMvc contracts, Vitest components, axe-core WCAG audits |
