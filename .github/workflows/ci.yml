@@ -179,6 +179,17 @@ jobs:
           HIREFLOW_DB_PASSWORD: "ci_runtime_app_secret_pass"
         run: |
           ./mvnw -B -f hireflow-api/pom.xml test \
-            -DargLine="-Duser.timezone=UTC" \
-            -Dhireflow.it.pass="ci_runtime_app_secret_pass" \
+            -DargLine="-Duser.timezone=UTC -DHIREFLOW_ALLOW_ISOLATED_IT=55432/hireflow_cap8_it -Dhireflow.db.url=jdbc:postgresql://127.0.0.1:55432/hireflow_cap8_it -Dhireflow.db.user=hireflow_cap8_app -Dhireflow.db.password=ci_runtime_app_secret_pass -Dhireflow.it.pass=ci_runtime_app_secret_pass" \
             -Dtest=HealthControllerTest,AuthControllerMockMvcTest,RoleAuthorizationIntegrationTest
+
+      - name: Print Surefire Reports on Failure
+        if: failure()
+        run: |
+          for f in hireflow-api/target/surefire-reports/*.txt; do
+            if [ -f "$f" ]; then
+              echo "=================================================="
+              echo "$f"
+              echo "=================================================="
+              cat "$f"
+            fi
+          done

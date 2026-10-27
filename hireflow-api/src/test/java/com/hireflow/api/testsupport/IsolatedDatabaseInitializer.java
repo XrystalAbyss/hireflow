@@ -8,7 +8,14 @@ import org.springframework.context.ConfigurableApplicationContext;
 public final class IsolatedDatabaseInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
     @Override public void initialize(ConfigurableApplicationContext context) {
         var env=context.getEnvironment();
-        if (!"55432/hireflow_cap8_it".equals(System.getenv("HIREFLOW_ALLOW_ISOLATED_IT")))
+        String allow = System.getenv("HIREFLOW_ALLOW_ISOLATED_IT");
+        if (allow == null || allow.isBlank()) {
+            allow = System.getProperty("HIREFLOW_ALLOW_ISOLATED_IT");
+        }
+        if (allow == null || allow.isBlank()) {
+            allow = env.getProperty("HIREFLOW_ALLOW_ISOLATED_IT");
+        }
+        if (!"55432/hireflow_cap8_it".equals(allow))
             throw new IllegalStateException("Explicit isolated database test opt-in is required");
         String url=env.getProperty("spring.datasource.url");
         String user=env.getProperty("spring.datasource.username");
@@ -16,7 +23,17 @@ public final class IsolatedDatabaseInitializer implements ApplicationContextInit
         String coreUrl=env.getProperty("hireflow.db.url",url);
         String coreUser=env.getProperty("hireflow.db.user",user);
         SafeTestDatabase.requireTarget(coreUrl,coreUser);
-        try(var c=DriverManager.getConnection(url,user,env.getProperty("spring.datasource.password"))) {
+        String pass = env.getProperty("spring.datasource.password");
+        if (pass == null || pass.isBlank()) {
+            pass = env.getProperty("hireflow.db.password");
+        }
+        if (pass == null || pass.isBlank()) {
+            pass = System.getProperty("hireflow.it.pass");
+        }
+        if (pass == null || pass.isBlank()) {
+            pass = System.getenv("HIREFLOW_IT_APP_PASSWORD");
+        }
+        try(var c=DriverManager.getConnection(url,user,pass)) {
             SafeTestDatabase.captureBaseline(c);
             com.hireflow.policy.UniversityCampusRoomPolicy.setTestContextRegistrationAllowed(true);
         } catch(Exception e) { throw new IllegalStateException("Isolated test database preflight failed",e); }
