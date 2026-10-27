@@ -40,8 +40,8 @@
 - **Presenter Action:** Launch the desktop Swing prototype or present compiled classes:
   - Terminal: `java -jar target/hireflow-1.0.0-desktop.jar`
 - **Key Concepts Highlighted:**
-  1. **Generics & Generic Repositories:** Point out `Repository<T, ID>` in `src/main/java/com/hireflow/repository/Repository.java`.
-  2. **Java Collections:** Explain usage of `ConcurrentHashMap` for lock-free thread safety in `InMemoryRepository`, `TreeSet` with custom comparators for candidate sorting, and `ArrayList` for session rosters.
+  1. **Generics & Generic Repositories:** Point out `CrudRepository<T, ID>` in `src/main/java/com/hireflow/repository/CrudRepository.java`.
+  2. **Java Collections:** Explain usage of `ConcurrentHashMap` in `AbstractInMemoryRepository`, a deterministic `Comparator` over student ID / drive ID / application ID in `GreedyScheduler`, and `ArrayList` for proposed sessions. Concurrent map operations are individually thread-safe, but a contains-then-put sequence is not atomic.
   3. **Java Swing Architecture:** Show `JFrame`, `CardLayout` navigation, `JTable` rendering live candidate data, and `SwingWorker` ensuring long-running scheduling calculations never freeze the Event Dispatch Thread (EDT).
 
 ---
@@ -63,12 +63,12 @@
   - Sign in as student `demo.student` (`Aarav Sharma`).
   - Demonstrate **Student Dossier Banner**: Real verified CGPA, department (CSE), roll number.
   - Navigate to **Recruitment Drives**: Browse corporate drives (e.g., Aether Cloud Networks, Cognitive Robotics Labs).
-  - Inspect **Eligibility Breakdown**: Show real-time computation of CGPA threshold ($\ge 8.5$), allowed branch match, and deadline validation.
-  - Click **Apply Now**: Complete application; show immediate status update to `APPLIED`. Show that duplicate application is blocked.
+  - Inspect **Eligibility Breakdown**: Show the actual selected drive's CGPA threshold, eligible branches, deadline, and active/closed status against the student profile.
+  - Review a previously submitted application and discuss eligibility and duplicate prevention without changing preserved database records.
 - **Step 2: Placement Officer Command Center:**
   - Sign in as placement officer `demo.officer`.
   - View **KPI Cards**: Active drives, candidate backlog, verified interview rooms (36 K/L Block rooms).
-  - Navigate to **Candidate Review**: Filter applicants for the drive, inspect Aarav Sharma's profile, and click **Shortlist Candidate**. Application status transitions to `SHORTLISTED`.
+  - Navigate to **Candidate Review** (`/officer/drives/:id/applications`), inspect existing shortlisted candidates, and explain status transitions without mutating preserved records.
 
 ---
 
@@ -97,7 +97,7 @@
   - **Core Java Backend:** **522** domain, generic repository, concurrency, and Swing tests (100% passing).
   - **Spring Boot REST API:** **198** integration, MockMvc, concurrency, and security tests (100% passing).
   - **Frontend UI Suite:** **147** Vitest component tests (100% passing, 5 skipped for live-only).
-  - **Playwright Browser E2E:** **16** passed (7 responsive viewports, 5 automated WCAG 2.1 AA scans, 4 live integration, 1 skipped).
+  - **Playwright Browser E2E:** **16** passed (7 showcase tests, 5 accessibility tests, 4 live integration; 1 additional skipped).
   - **Grand Total:** **883 automated tests passing** (0 failures, 6 skipped; 26 real service tests, 857 unit/mock/isolated).
 - **Architectural Primacy:**
   - Emphasize to examiners: *Java remains the application's core engineering foundation*—all business invariants, greedy scheduling algorithms, transaction boundaries, and security models are executed in Java 21. React 19 acts as the modern browser interface.
