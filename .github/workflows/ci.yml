@@ -114,7 +114,7 @@ jobs:
 
       - name: Audit npm dependencies
         working-directory: hireflow-app
-        run: npm audit --audit-level=high || true
+        run: npm audit --audit-level=high
 
   # ----------------------------------------------------------------------------
   # Job 4: Real PostgreSQL Integration Suite
