@@ -7,11 +7,11 @@
 
 ### Section 1: Java Core & Object-Oriented Programming (Q1 – Q6)
 
-#### Q1: What is the significance of using Java Records in HireFlow (e.g., `TimeSlot`)?
+#### Q1: What is the significance of using Java Records in HireFlow (e.g., `TimeWindow`)?
 **Answer:** Java Records provide compact, immutable data carriers with auto-generated constructors, getters, `equals()`, and `hashCode()`, enforcing invariant validation directly in compact constructors without boilerplate.
 
 #### Q2: How does HireFlow achieve abstraction between storage mechanisms?
-**Answer:** Through the generic `Repository<T, ID>` interface, which decouples domain and scheduling services from whether records reside in in-memory collections, JDBC, or Spring Data.
+**Answer:** Through the generic `CrudRepository<T, ID>` interface, which decouples domain and scheduling services from whether records reside in in-memory collections, JDBC, or Spring Data.
 
 #### Q3: Where is polymorphism demonstrated in the repository layer?
 **Answer:** Subclasses like `InMemoryApplicationRepository` and `JdbcApplicationRepository` implement `ApplicationRepository` differently while being treated uniformly by higher-level services.
@@ -20,7 +20,7 @@
 **Answer:** To guarantee encapsulation so external callers cannot mutate internal state (such as allowed branches in a recruitment drive) outside controlled domain methods.
 
 #### Q5: How are Java 21 features used in HireFlow?
-**Answer:** Through Java Records, Pattern Matching for `switch` in exception handling, enhanced String templates, and modern Stream APIs across service layers.
+**Answer:** Through Java Records, Pattern Matching for `switch` in exception handling, and modern Stream APIs across service layers.
 
 #### Q6: What is defensive copying and where is it applied?
 **Answer:** Returning a new copy of mutable data structures (e.g. `new HashSet<>(allowedBranches)`) in getters to prevent callers from modifying internal entity collections.
@@ -29,11 +29,11 @@
 
 ### Section 2: Java Collections Framework (Q7 – Q12)
 
-#### Q7: Why is `ConcurrentHashMap` used instead of `HashMap` in `InMemoryRepository`?
+#### Q7: Why is `ConcurrentHashMap` used instead of `HashMap` in `AbstractInMemoryRepository`?
 **Answer:** `ConcurrentHashMap` provides thread-safe operations using fine-grained segment/bucket locking, preventing race conditions during concurrent reads and writes without locking the entire map.
 
 #### Q8: Where is `TreeSet` or custom `Comparator` sorting used in HireFlow?
-**Answer:** In `GreedyScheduler`, where candidate applications are sorted deterministically by candidate CGPA descending, breaking ties by application ID ascending.
+**Answer:** In `GreedyScheduler`, where a `Comparator` sorts applications by student ID, drive ID, and application ID. CGPA is not used as a scheduling priority.
 
 #### Q9: Why is `ArrayList` chosen for candidate and session lists?
 **Answer:** `ArrayList` provides $O(1)$ random access time and low memory overhead, ideal for iterative time-slot evaluation and indexed timetable rendering.
@@ -118,7 +118,7 @@
 **Answer:** Using a standard cookie-based `JSESSIONID` session mechanism where `DaoAuthenticationProvider` verifies credentials against the database using BCrypt.
 
 #### Q31: How is Cross-Site Request Forgery (CSRF) mitigated in HireFlow?
-**Answer:** Using Spring Security's `CookieCsrfTokenRepository` with `HttpOnly` and `SameSite` protections, requiring mutating HTTP requests (POST, PUT) to supply a valid `X-CSRF-TOKEN`.
+**Answer:** Using Spring Security's `HttpSessionCsrfTokenRepository` for synchronizer tokens stored server-side in the HTTP session, validated using the `X-CSRF-TOKEN` header on state-changing requests. Cookie flags are a separate defense.
 
 #### Q32: What are the three security roles enforced across HireFlow endpoints?
 **Answer:** `ROLE_STUDENT` (applicant self-service), `ROLE_PLACEMENT_OFFICER` (drive, company, candidate, and scheduling management), and `ROLE_ADMINISTRATOR` (system administration).
@@ -140,16 +140,16 @@
 **Answer:** A deterministic greedy interval scheduling algorithm (`GreedyScheduler`) with multi-resource constraint checking.
 
 #### Q37: Is the GreedyScheduler guaranteed to produce a globally optimal schedule?
-**Answer:** No; greedy interval scheduling is an approximation heuristic that maximizes immediate local candidate placement, prioritizing high-CGPA candidates rather than solving an NP-hard global optimum.
+**Answer:** No. It picks feasible early slots and resources in deterministic ID order, without global backtracking or guaranteed maximum placement. It does not prioritize CGPA.
 
 #### Q38: What is the computational time complexity of the GreedyScheduler?
-**Answer:** $O(N \log N + N \cdot S \cdot I \cdot R)$, where $N$ is candidate count, $S$ is time slots in the window, $I$ is available interviewers, and $R$ is eligible rooms.
+**Answer:** A simplified bound is $O(N\log N + N\cdot S\cdot I\cdot R\cdot C)$ where $C$ is the cost of inspecting existing sessions for conflicts. Actual complexity depends on implementation and session pool size.
 
 #### Q39: What is the two-phase scheduling workflow in HireFlow?
-**Answer:** Phase 1 generates a non-mutating advisory preview with a signed token in memory; Phase 2 durably commits validated appointments to PostgreSQL upon officer confirmation.
+**Answer:** Phase 1 generates a non-mutating advisory preview with an unpredictable, short-lived server-side preview token in memory; Phase 2 durably commits validated appointments to PostgreSQL upon officer confirmation.
 
 #### Q40: What happens if two officers attempt to publish conflicting previews concurrently?
-**Answer:** The first publication succeeds; the second publication encounters database resource locks or exclusion constraints and returns an HTTP 409 conflict, rolling back cleanly.
+**Answer:** Concurrent publication is revalidated and database constraints prevent double-booking. Outcomes can include HTTP 200, 207 partial success, or 409 conflicts depending on the token and transaction state.
 
 #### Q41: How are schedule preview tokens secured against replay attacks?
 **Answer:** Preview tokens are single-use (`PREV-...`) with a 15-minute expiration; once consumed or expired, replayed submission attempts are rejected with HTTP 409 or HTTP 410.
