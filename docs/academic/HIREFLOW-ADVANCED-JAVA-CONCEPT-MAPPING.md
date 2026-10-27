@@ -60,37 +60,32 @@ This document establishes 1-to-1 traceability between theoretical Advanced Java 
   - Sub-interfaces: `ApplicationRepository`, `StudentRepository`, `CompanyRepository`, `DriveRepository`, `InterviewerRepository`, `RoomRepository`, `InterviewSessionRepository`.
 
 ### 2.3 Generics & Type Safety
-- **Concept:** Compile-time type checking and reusable algorithmic containers.
-- **Why Selected:** Eliminates runtime `ClassCastException` and guarantees type safety across heterogeneous repository data stores and pagination models.
+- **Concept:** Compile-time type safety through parameterized interfaces and reusable implementations.
+- **Why Selected:** Domain services depend on typed repository contracts without unsafe casts.
 - **Implementation in HireFlow:**
-  - `src/main/java/com/hireflow/repository/AbstractInMemoryRepository.java`: Generic in-memory data store using parameterized types `T` and `ID`:
+  - `src/main/java/com/hireflow/repository/AbstractInMemoryRepository.java` provides a generic in-memory implementation with a concurrent map and a function for extracting IDs:
     ```java
-    public abstract class InMemoryCrudRepository<T, ID> implements CrudRepository<T, ID> {
-        protected final ConcurrentHashMap<ID, T> storage = new ConcurrentHashMap<>();
-        protected abstract ID extractId(T entity);
-        ...
+    public abstract class AbstractInMemoryRepository<T, ID> implements CrudRepository<T, ID> {
+        protected final Map<ID, T> store = new ConcurrentHashMap<>();
+        private final Function<T, ID> idExtractor;
+        // Concrete CRUD methods are implemented in the source file.
     }
     ```
-  - `hireflow-api/src/main/java/com/hireflow/api/dto/PagedResponse.java`: Generic DTO for bounded REST pagination (`PagedResponse<T>`).
+  - `hireflow-api/src/main/java/com/hireflow/api/dto/PagedResponse.java` models generic paginated REST responses, where implemented.
 
 ### 2.4 Java Collections Framework
-- **Concept:** High-performance data structures: `List`, `ArrayList`, `Map`, `Set`, `TreeSet`, and `ConcurrentHashMap`.
-- **Why Selected:** Fast indexed traversal, unique element deduplication, and thread-safe shared state.
+- **Concept:** `List`, `ArrayList`, `Map`, `Set` and `ConcurrentHashMap`; the scheduler also uses `Comparator`.
+- **Why Selected:** Efficient sequence traversal, uniqueness checks, in-memory storage and repeatable scheduling order.
 - **Implementation in HireFlow:**
-  - **`ConcurrentHashMap`**: Used in `AbstractInMemoryRepository` for thread-safe concurrent storage of drives, candidates, and rooms without global synchronization bottlenecks.
-  - **`ArrayList` & `List`**: Used in `GreedyScheduler.schedule()` for maintaining ordered applicant rosters and resulting interview sessions.
-  - **`Set` & `HashSet`**: Used in `RecruitmentDrive.getAllowedBranches()` for $O(1)$ branch eligibility lookups.
-  - **`Comparator`**: `GreedyScheduler` sorts candidate applications by student ID, drive ID and application ID, **not by CGPA**:
+  - **`ConcurrentHashMap`:** `AbstractInMemoryRepository` holds entity records in a map. Its individual operations are thread-safe, but a separate `containsKey` followed by `put` is *not* an atomic duplicate check.
+  - **`ArrayList` & `List`:** `GreedyScheduler.schedule()` builds sorted input copies and accumulates proposed appointments.
+  - **`Set` / `HashSet`:** Used in the domain eligibility and uniqueness structures where applicable.
+  - **`Comparator`:** The actual greedy scheduler sorts by **student ID, drive ID, application ID**; it does not rank applicants by CGPA:
     ```java
     sortedApps.sort(Comparator
         .comparing(Application::getStudentId)
         .thenComparing(Application::getDriveId)
         .thenComparing(Application::getId));
-    ```java
-    Comparator<Application> candidateComparator = Comparator
-        .comparingDouble((Application a) -> studentMap.get(a.getStudentId()).getCgpa())
-        .reversed()
-        .thenComparing(Application::getId);
     ```
 
 ### 2.5 Exception Handling & Custom Domain Exceptions
