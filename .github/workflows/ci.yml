@@ -86,7 +86,7 @@ jobs:
         run: ./mvnw -B -f hireflow-api/pom.xml compile -q
 
       - name: Run Core Module Offline Unit Tests
-        run: ./mvnw -B test -Duser.timezone=UTC -Dtest=UniversityCampusRoomPolicyTest,SessionIdentityRegressionTest,GreedySchedulerTest,EntityValidationTest,CompanyServiceTest,PasswordHasherTest,CsrfTokenManagerTest,BruteForceThrottlerTest,AuthenticationServiceTest
+        run: ./mvnw -B test -DargLine="-Duser.timezone=UTC" -Dtest=UniversityCampusRoomPolicyTest,SessionIdentityRegressionTest,GreedySchedulerTest,EntityValidationTest,CompanyServiceTest,PasswordHasherTest,CsrfTokenManagerTest,BruteForceThrottlerTest,AuthenticationServiceTest
 
       - name: Package Spring Boot API artifact (Packaging Smoke Test)
         run: ./mvnw -B -f hireflow-api/pom.xml package -DskipTests -q
@@ -179,6 +179,6 @@ jobs:
           HIREFLOW_DB_PASSWORD: "ci_runtime_app_secret_pass"
         run: |
           ./mvnw -B -f hireflow-api/pom.xml test \
-            -Duser.timezone=UTC \
+            -DargLine="-Duser.timezone=UTC" \
             -Dhireflow.it.pass="ci_runtime_app_secret_pass" \
             -Dtest=HealthControllerTest,AuthControllerMockMvcTest,RoleAuthorizationIntegrationTest
