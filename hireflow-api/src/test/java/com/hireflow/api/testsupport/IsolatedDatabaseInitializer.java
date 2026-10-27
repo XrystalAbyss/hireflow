@@ -33,6 +33,17 @@ public final class IsolatedDatabaseInitializer implements ApplicationContextInit
         if (pass == null || pass.isBlank()) {
             pass = System.getenv("HIREFLOW_IT_APP_PASSWORD");
         }
+        try {
+            org.flywaydb.core.Flyway.configure()
+                    .dataSource(url, user, pass)
+                    .locations("classpath:db/migration")
+                    .cleanDisabled(true)
+                    .baselineOnMigrate(false)
+                    .load()
+                    .migrate();
+        } catch (Exception e) {
+            throw new IllegalStateException("Isolated test database migration failed", e);
+        }
         try(var c=DriverManager.getConnection(url,user,pass)) {
             SafeTestDatabase.captureBaseline(c);
             com.hireflow.policy.UniversityCampusRoomPolicy.setTestContextRegistrationAllowed(true);
