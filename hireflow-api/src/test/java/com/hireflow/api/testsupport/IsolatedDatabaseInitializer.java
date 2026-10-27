@@ -38,7 +38,8 @@ public final class IsolatedDatabaseInitializer implements ApplicationContextInit
                     .dataSource(url, user, pass)
                     .locations("classpath:db/migration")
                     .cleanDisabled(true)
-                    .baselineOnMigrate(false)
+                    .baselineOnMigrate(true)
+                    .baselineVersion("0")
                     .load()
                     .migrate();
         } catch (Exception e) {
