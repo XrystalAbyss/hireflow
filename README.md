@@ -1,6 +1,6 @@
 # HireFlow
 
-**Campus Recruitment & Interview Scheduling Platform**
+*Campus Recruitment & Interview Scheduling Platform*
 
 HireFlow is an end-to-end full-stack recruitment coordination platform designed for university placement teams and graduating students. It replaces fragmented spreadsheets, manual eligibility verification, and schedule collisions with a unified workflow connecting recruitment drives, eligibility rules, candidate shortlisting, venue/interviewer resource pools, deterministic interview scheduling, and transactional timetable publication.
 
