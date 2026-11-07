@@ -95,7 +95,7 @@ export function CandidateDetailDialog({
 
             <div className="grid grid-cols-2 gap-3 pt-1">
               <div>
-                <span className="text-muted-foreground block">Verified CGPA</span>
+                <span className="text-muted-foreground block">Recorded CGPA</span>
                 <span className={`font-mono text-lg font-bold ${isHighCgpa ? 'text-brass-700 dark:text-brass-400' : 'text-accent'}`}>
                   {application.cgpa.toFixed(2)}
                 </span>
