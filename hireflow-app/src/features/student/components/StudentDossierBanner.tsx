@@ -1,6 +1,6 @@
 import * as React from 'react'
 import type { StudentProfileDto } from '@/types/api'
-import { GraduationCap, ShieldCheck, Mail, Calendar, HelpCircle } from 'lucide-react'
+import { GraduationCap, UserRound, Mail, Calendar, HelpCircle } from 'lucide-react'
 
 export interface StudentDossierBannerProps {
   profile: StudentProfileDto
@@ -14,7 +14,7 @@ export const StudentDossierBanner: React.FC<StudentDossierBannerProps> = ({
   return (
     <div
       className={`rounded-lg border border-border bg-card p-5 sm:p-6 shadow-xs ${className}`}
-      aria-label="Verified Academic Dossier"
+      aria-label="Student academic profile"
     >
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border/80">
         <div className="flex items-start sm:items-center gap-3.5">
@@ -27,8 +27,8 @@ export const StudentDossierBanner: React.FC<StudentDossierBannerProps> = ({
                 {profile.name}
               </h2>
               <span className="inline-flex items-center gap-1 text-xs font-medium text-teal-800 bg-teal-900/10 border border-teal-700/20 px-2 py-0.5 rounded-full">
-                <ShieldCheck className="h-3 w-3" aria-hidden="true" />
-                Verified Student
+                <UserRound className="h-3 w-3" aria-hidden="true" />
+                Academic profile on file
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-0.5">
@@ -45,7 +45,7 @@ export const StudentDossierBanner: React.FC<StudentDossierBannerProps> = ({
         <div className="flex items-center gap-3 shrink-0 self-start md:self-auto bg-ivory-100/90 border border-border px-3.5 py-2 rounded-md">
           <div className="text-right">
             <span className="text-xs uppercase tracking-wider text-muted-foreground block font-sans">
-              Cumulative GPA
+              Recorded CGPA
             </span>
             <span className="font-mono font-bold text-lg text-primary leading-tight">
               {profile.cgpa.toFixed(2)}
@@ -72,7 +72,7 @@ export const StudentDossierBanner: React.FC<StudentDossierBannerProps> = ({
         </div>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <HelpCircle className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <span>To report CGPA or branch discrepancies, contact the University Placement Cell.</span>
+          <span>Academic details are recorded in HireFlow, not yet independently verified. Contact the placement cell to correct discrepancies.</span>
         </div>
       </div>
     </div>
