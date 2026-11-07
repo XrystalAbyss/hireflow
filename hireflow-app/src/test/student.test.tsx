@@ -147,7 +147,7 @@ describe('HireFlow Student Opportunity Hub Tests', () => {
       render(<StudentDossierBanner profile={mockProfile} />)
       expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument()
       expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
-      expect(screen.getByText(/contact the University Placement Cell/i)).toBeInTheDocument()
+      expect(screen.getByText(/contact the placement cell to correct discrepancies/i)).toBeInTheDocument()
     })
   })
 
