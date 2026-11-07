@@ -31,7 +31,7 @@ export const StudentDashboardPage: React.FC = () => {
       <div className="space-y-6">
         <PageHeading
           title="Candidate Dashboard"
-          description="Retrieving verified academic dossier and real-time recruitment updates..."
+          description="Retrieving your academic profile and recruitment updates..."
         />
         <LoadingSkeleton rows={3} />
       </div>
@@ -68,7 +68,7 @@ export const StudentDashboardPage: React.FC = () => {
       {/* Page Title & Breadcrumbs */}
       <PageHeading
         title="Student Opportunity Hub"
-        description="Official recruitment portal for verified university candidates. Review eligibility, submit applications, and track confirmed interviews."
+        description="Student recruitment workspace. Review eligibility based on recorded academic details, submit applications, and track confirmed interviews."
         breadcrumbs={[{ label: 'Portal Home', href: '/student/dashboard' }, { label: 'Dashboard' }]}
         actions={
           <div className="flex flex-wrap items-center gap-2">
@@ -85,7 +85,7 @@ export const StudentDashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* Verified Academic Profile Banner */}
+      {/* Recorded academic profile (source verification not yet implemented) */}
       <StudentDossierBanner profile={profile} />
 
       {/* One divided overview keeps real counts together without decorative cards. */}
@@ -158,7 +158,7 @@ export const StudentDashboardPage: React.FC = () => {
                 {actionableDrives.length} recruitment drive{actionableDrives.length > 1 ? 's' : ''} currently open matching your academic criteria.
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Review verified requirements and submit before application windows close.
+                Review current eligibility criteria and submit before application windows close.
               </p>
             </div>
           </div>

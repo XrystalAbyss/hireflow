@@ -11,12 +11,12 @@ vi.mock('@/core/auth/AuthContext', () => ({
   }),
 }))
 
-describe('Student shell verified-profile boundary', () => {
+describe('Student shell recorded-profile boundary', () => {
   it('keeps the authenticated identity but never invents branch or GPA if profile loading fails', () => {
     const queryClient = new QueryClient()
     render(<QueryClientProvider client={queryClient}><MemoryRouter><StudentShell academicProfile={undefined}><div>Student work</div></StudentShell></MemoryRouter></QueryClientProvider>)
     expect(screen.getByText('Student work')).toBeInTheDocument()
-    expect(screen.getByText('Verified profile unavailable')).toBeInTheDocument()
+    expect(screen.getByText('Academic profile unavailable')).toBeInTheDocument()
     expect(screen.getByText('—')).toBeInTheDocument()
     expect(screen.getByText('Student', { exact: true })).toBeInTheDocument()
     expect(screen.queryByText('9.15')).not.toBeInTheDocument()

@@ -177,10 +177,10 @@ export const StudentShell: React.FC<StudentShellProps> = ({
         )}
       </header>
 
-      {/* Backend-Authoritative Academic Profile Bar */}
+      {/* Server-recorded academic profile, not independently verified */}
       <section
         className="bg-ivory-100/90 border-b border-border px-4 py-2.5 text-xs text-muted-foreground"
-        aria-label="Verified Academic Profile"
+        aria-label="Recorded Academic Profile"
       >
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
@@ -189,7 +189,7 @@ export const StudentShell: React.FC<StudentShellProps> = ({
               Academic Profile (Read-Only):
             </span>
             <span className="text-foreground font-semibold text-xs">
-              {academicProfile ? `${academicProfile.branch} Branch` : "Verified profile unavailable"}
+              {academicProfile ? `${academicProfile.branch} Branch` : "Academic profile unavailable"}
             </span>
           </div>
 
@@ -201,7 +201,7 @@ export const StudentShell: React.FC<StudentShellProps> = ({
               </strong>
             </span>
             <span className="hidden sm:inline border-l border-border pl-3 text-muted-foreground">
-              {academicProfile ? "Backend Authoritative Record" : "Refresh to retry profile lookup"}
+              {academicProfile ? "HireFlow record (not independently verified)" : "Refresh to retry profile lookup"}
             </span>
           </div>
         </div>

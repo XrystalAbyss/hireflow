@@ -118,7 +118,7 @@ export function OfficerCandidateReviewPage() {
       },
       {
         accessorKey: 'cgpa',
-        header: 'Verified CGPA',
+        header: 'Recorded CGPA',
         cell: ({ row }) => {
           const cgpa = row.original.cgpa
           const isHigh = cgpa >= 8.5

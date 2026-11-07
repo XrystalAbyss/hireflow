@@ -130,7 +130,7 @@ const mockInterviewSession: StudentInterviewDto = {
 
 describe('HireFlow Student Opportunity Hub Tests', () => {
   describe('StudentDossierBanner', () => {
-    it('renders candidate identity, academic metrics, and verified badge', () => {
+    it('renders candidate identity and recorded academic metrics without claiming verification', () => {
       render(<StudentDossierBanner profile={mockProfile} />)
 
       expect(screen.getByText('Aarav Sharma')).toBeInTheDocument()
@@ -138,14 +138,16 @@ describe('HireFlow Student Opportunity Hub Tests', () => {
       expect(screen.getByText('9.15')).toBeInTheDocument()
       expect(screen.getByText('Computer Science')).toBeInTheDocument()
       expect(screen.getByText('2026')).toBeInTheDocument()
-      expect(screen.getByText('Verified Student')).toBeInTheDocument()
+      expect(screen.getByText('Academic profile on file')).toBeInTheDocument()
+      expect(screen.queryByText('Verified Student')).not.toBeInTheDocument()
+      expect(screen.getByText(/not yet independently verified/i)).toBeInTheDocument()
     })
 
     it('enforces read-only institutional record without edit triggers', () => {
       render(<StudentDossierBanner profile={mockProfile} />)
       expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument()
       expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
-      expect(screen.getByText(/contact the University Placement Cell/i)).toBeInTheDocument()
+      expect(screen.getByText(/contact the placement cell to correct discrepancies/i)).toBeInTheDocument()
     })
   })
 
