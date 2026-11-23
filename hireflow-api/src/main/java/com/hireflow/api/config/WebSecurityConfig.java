@@ -49,7 +49,7 @@ import java.util.List;
 @EnableMethodSecurity
 public class WebSecurityConfig {
 
-    @Value("${hireflow.api.cors.allowed-origins:http://localhost:8080,http://127.0.0.1:8080}")
+    @Value("${hireflow.api.cors.allowed-origins:http://localhost:8080,http://127.0.0.1:8080,http://localhost:8081,http://127.0.0.1:8081,http://localhost:5174,http://127.0.0.1:5174,http://localhost:3000}")
     private String[] allowedOrigins;
 
     @Bean
@@ -108,7 +108,20 @@ public class WebSecurityConfig {
                 .requestMatchers("/api/v1/officer/**").hasAnyRole("PLACEMENT_OFFICER", "ADMINISTRATOR")
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMINISTRATOR")
                 .requestMatchers("/api/v1/test/**").authenticated()
-                .anyRequest().denyAll()
+                .requestMatchers("/api/**").denyAll()
+                .requestMatchers(
+                        "/",
+                        "/index.html",
+                        "/favicon.ico",
+                        "/vite.svg",
+                        "/hero.png",
+                        "/assets/**",
+                        "/auth/**",
+                        "/student/**",
+                        "/officer/**",
+                        "/admin/**",
+                        "/workshop/**").permitAll()
+                .anyRequest().permitAll()
             )
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint(restAuthenticationEntryPoint)

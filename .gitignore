@@ -40,3 +40,13 @@ hireflow-local.properties
 # Captured session cookies from manual HTTP probing must never be committed
 cookies.txt
 
+# Generated frontend static bundle embedded in Spring Boot
+hireflow-api/src/main/resources/static/
+hireflow-app/dist/
+
+# Portable presentation package distribution ZIP
+HireFlow-FullStack-Presentation.zip
+target/
+
+
+

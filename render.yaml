@@ -1,0 +1,41 @@
+# ==============================================================================
+# HireFlow — Render Blueprint Infrastructure-as-Code (render.yaml)
+# Single-origin Spring Boot 4 + React 19 Web Service with PostgreSQL
+# ==============================================================================
+
+services:
+  - type: web
+    name: hireflow
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    region: oregon
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: HIREFLOW_COOKIE_SECURE
+        value: "true"
+      - key: JAVA_OPTS
+        value: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=40.0 -XX:+ExitOnOutOfMemoryError -Duser.timezone=UTC"
+      - key: HIREFLOW_DB_URL
+        fromDatabase:
+          name: hireflow-postgres
+          property: connectionString
+      - key: HIREFLOW_DB_USER
+        fromDatabase:
+          name: hireflow-postgres
+          property: user
+      - key: HIREFLOW_DB_PASSWORD
+        fromDatabase:
+          name: hireflow-postgres
+          property: password
+
+databases:
+  - name: hireflow-postgres
+    databaseName: hireflow_prod
+    user: hireflow_user
+    plan: free
+    region: oregon
