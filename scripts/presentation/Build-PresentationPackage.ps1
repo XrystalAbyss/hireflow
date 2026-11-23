@@ -1,4 +1,4 @@
-﻿# ==============================================================================
+# ==============================================================================
 # HireFlow — Build Portable Full-Stack Windows Presentation Package
 # Generates HireFlow-FullStack-Presentation.zip containing:
 # - Single-origin Spring Boot 4 + React 19 executable JAR

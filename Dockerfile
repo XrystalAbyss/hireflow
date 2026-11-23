@@ -20,17 +20,12 @@ RUN npm run build
 # ------------------------------------------------------------------------------
 # Stage 2: Build Spring Boot Backend with Embedded Frontend
 # ------------------------------------------------------------------------------
-FROM eclipse-temurin:21-jdk-jammy AS backend-builder
+FROM maven:3.9-eclipse-temurin-21 AS backend-builder
 WORKDIR /app
 
-# Cache Maven Wrapper and POM descriptors
-COPY .mvn/ .mvn/
-COPY mvnw pom.xml ./
+# Copy root and module POM descriptors
+COPY pom.xml ./
 COPY hireflow-api/pom.xml hireflow-api/
-RUN chmod +x mvnw
-
-# Resolve dependencies
-RUN ./mvnw -B dependency:resolve-plugins dependency:resolve -q || true
 
 # Copy source trees
 COPY src/ src/
@@ -40,8 +35,8 @@ COPY hireflow-api/src/ hireflow-api/src/
 COPY --from=frontend-builder /app/frontend/dist/ hireflow-api/src/main/resources/static/
 
 # Compile root module classes and package Spring Boot executable JAR
-RUN ./mvnw -B install -DskipTests -q && \
-    ./mvnw -B -f hireflow-api/pom.xml clean package -DskipTests -q
+RUN mvn -B install -DskipTests && \
+    mvn -B -f hireflow-api/pom.xml clean package -DskipTests
 
 # ------------------------------------------------------------------------------
 # Stage 3: Production Runtime (Single Origin)
@@ -66,7 +61,7 @@ USER hireflow:hireflow
 # Render, Cloud Run, and container platforms inject $PORT (default 8080)
 ENV PORT=8080 \
     SPRING_PROFILES_ACTIVE=prod \
-    JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=40.0 -XX:+ExitOnOutOfMemoryError -Duser.timezone=UTC"
+    JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=55.0 -XX:InitialRAMPercentage=25.0 -XX:+UseSerialGC -Xss512k -XX:MaxMetaspaceSize=128m -XX:+ExitOnOutOfMemoryError -Duser.timezone=UTC"
 
 EXPOSE 8080
 

@@ -50,3 +50,6 @@ target/
 
 
 
+.neon
+node_modules/
+.playwright-mcp/
