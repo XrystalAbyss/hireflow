@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { localToday } from '@/lib/dateUtils'
+import { formatCompanyDisplayName, formatInterviewerDisplayName } from '@/lib/presentationAdapter'
 import type {
   OfficerDriveDetailDto,
   OfficerInterviewerDetailDto,
@@ -289,7 +290,7 @@ const companyInterviewers = React.useMemo(() => {
                 <span>Select Active Drive *</span>
                 {selectedDrive && (
                   <Badge variant="outline" className="text-[10px] font-mono">
-                    {selectedDrive.companyName}
+                    {formatCompanyDisplayName(selectedDrive.companyName)}
                   </Badge>
                 )}
               </label>
@@ -303,7 +304,7 @@ const companyInterviewers = React.useMemo(() => {
               >
                 {displayDrives.map((d) => (
                   <option key={d.id} value={d.id}>
-                    {d.jobTitle} ({d.id}) — {d.companyName}
+                    {d.jobTitle} — {formatCompanyDisplayName(d.companyName)}
                   </option>
                 ))}
               </select>
@@ -529,7 +530,7 @@ const companyInterviewers = React.useMemo(() => {
                           checked={isChecked}
                           onCheckedChange={() => toggleInterviewer(i.id)}
                         />
-                        <span className="truncate font-medium text-foreground">{i.name}</span>
+                        <span className="truncate font-medium text-foreground">{formatInterviewerDisplayName(i.name)}</span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {isCompanyMatch && (
@@ -537,7 +538,6 @@ const companyInterviewers = React.useMemo(() => {
                             Partner
                           </Badge>
                         )}
-                        <span className="text-[10px] font-mono text-muted-foreground">{i.id}</span>
                       </div>
                     </label>
                   )

@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { OfficerSchedulingPreviewResponseDto } from '@/types/api'
+import { formatCompanyDisplayName } from '@/lib/presentationAdapter'
 import { SchedulingTimeGrid } from './SchedulingTimeGrid'
 import { SchedulingDataTable } from './SchedulingDataTable'
 import { UnscheduledCandidatesList } from './UnscheduledCandidatesList'
@@ -99,7 +100,7 @@ export const AdvisoryPreviewView: React.FC<AdvisoryPreviewViewProps> = ({
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Target Company: <strong className="text-foreground">{preview.companyName}</strong> • Date: <strong className="text-foreground">{preview.date}</strong> ({formatLocalTime(preview.startTime)} – {formatLocalTime(preview.endTime)})
+              Target Company: <strong className="text-foreground">{formatCompanyDisplayName(preview.companyName)}</strong> • Date: <strong className="text-foreground">{preview.date}</strong> ({formatLocalTime(preview.startTime)} – {formatLocalTime(preview.endTime)})
             </p>
           </div>
 

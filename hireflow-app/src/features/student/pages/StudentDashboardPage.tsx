@@ -68,7 +68,7 @@ export const StudentDashboardPage: React.FC = () => {
       {/* Page Title & Breadcrumbs */}
       <PageHeading
         title="Student Opportunity Hub"
-        description="Official recruitment portal for verified university candidates. Review eligibility, submit applications, and track confirmed interviews."
+        description="Official recruitment portal for registered university candidates. Review eligibility, submit applications, and track confirmed interviews."
         breadcrumbs={[{ label: 'Portal Home', href: '/student/dashboard' }, { label: 'Dashboard' }]}
         actions={
           <div className="flex flex-wrap items-center gap-2">

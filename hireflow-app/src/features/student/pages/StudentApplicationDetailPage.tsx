@@ -66,9 +66,9 @@ export const StudentApplicationDetailPage: React.FC = () => {
         }
       case 'ELIGIBLE':
         return {
-          title: 'Academic Eligibility Verified',
+          title: 'Academic Criteria Met',
           description:
-            'Your departmental CGPA and degree branch criteria have been validated against corporate drive prerequisites. The application is eligible for candidate shortlisting.',
+            'Your departmental CGPA and degree branch criteria meet the corporate drive prerequisites. The application is eligible for candidate shortlisting.',
           badgeColor: 'text-teal-800',
           bgColor: 'border-teal-700/20 bg-teal-900/5',
         }
@@ -100,7 +100,7 @@ export const StudentApplicationDetailPage: React.FC = () => {
         return {
           title: 'Recruitment Evaluation Concluded',
           description:
-            'Corporate recruiters have completed the evaluation round for this placement drive. While this candidacy will not proceed further, your verified dossier remains active for upcoming opportunities.',
+            'Corporate recruiters have completed the evaluation round for this placement drive. While this candidacy will not proceed further, your academic profile remains active for upcoming opportunities.',
           badgeColor: 'text-destructive',
           bgColor: 'border-destructive/20 bg-destructive/5',
         }
@@ -256,7 +256,7 @@ export const StudentApplicationDetailPage: React.FC = () => {
         {/* Recorded Evaluation Milestones */}
         <div className="space-y-3 pt-2">
           <span className="text-xs uppercase tracking-wider font-semibold text-muted-foreground block">
-            Verified Audit Milestones
+            Recorded Audit Milestones
           </span>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
             <div className="p-3.5 rounded-md border border-border/80 bg-muted/20 text-xs space-y-1">

@@ -16,7 +16,7 @@ describe('Student shell verified-profile boundary', () => {
     const queryClient = new QueryClient()
     render(<QueryClientProvider client={queryClient}><MemoryRouter><StudentShell academicProfile={undefined}><div>Student work</div></StudentShell></MemoryRouter></QueryClientProvider>)
     expect(screen.getByText('Student work')).toBeInTheDocument()
-    expect(screen.getByText('Verified profile unavailable')).toBeInTheDocument()
+    expect(screen.getByText('Academic profile unavailable')).toBeInTheDocument()
     expect(screen.getByText('—')).toBeInTheDocument()
     expect(screen.getByText('Student', { exact: true })).toBeInTheDocument()
     expect(screen.queryByText('9.15')).not.toBeInTheDocument()

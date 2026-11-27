@@ -6,6 +6,10 @@ import { Button } from '@/components/ui/button'
 import { ApplicationStatusBadge } from '@/components/domain/application-status-badge'
 import { formatLocalDateTime } from '@/lib/dateUtils'
 import {
+  formatCompanyDisplayName,
+  formatInterviewerDisplayName,
+} from '@/lib/presentationAdapter'
+import {
   CalendarDays,
   Clock,
   MapPin,
@@ -93,7 +97,7 @@ export const InterviewSessionCard: React.FC<InterviewSessionCardProps> = ({
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             <Building2 className="h-3.5 w-3.5" aria-hidden="true" />
-            <span>{session.companyName}</span>
+            <span>{formatCompanyDisplayName(session.companyName)}</span>
           </div>
           <h3
             id={`session-title-${session.sessionId}`}
@@ -116,8 +120,8 @@ export const InterviewSessionCard: React.FC<InterviewSessionCardProps> = ({
           <div className="flex items-center gap-1.5 text-muted-foreground">
             <UserCheck className="h-3.5 w-3.5 shrink-0 text-brass-600" aria-hidden="true" />
             <span>Panel:</span>
-            <span className="font-medium text-foreground truncate max-w-[150px]" title={session.interviewerName}>
-              {session.interviewerName}
+            <span className="font-medium text-foreground truncate max-w-[150px]" title={formatInterviewerDisplayName(session.interviewerName)}>
+              {formatInterviewerDisplayName(session.interviewerName)}
             </span>
           </div>
         </div>

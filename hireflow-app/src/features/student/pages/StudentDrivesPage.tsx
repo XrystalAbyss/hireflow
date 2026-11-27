@@ -113,7 +113,7 @@ export const StudentDrivesPage: React.FC = () => {
       {/* Page Title & Breadcrumbs */}
       <PageHeading
         title="Recruitment Opportunity Explorer"
-        description="Browse corporate recruitment drives, inspect verified academic eligibility, and submit authoritative placement applications."
+        description="Browse corporate recruitment drives, inspect recorded academic eligibility, and submit authoritative placement applications."
         breadcrumbs={[
           { label: 'Portal Home', href: '/student/dashboard' },
           { label: 'Recruitment Drives' },

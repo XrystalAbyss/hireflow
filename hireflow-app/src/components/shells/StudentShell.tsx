@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useQueryClient } from "@tanstack/react-query"
 import { warmRoute } from "@/core/navigation/warmRoute"
+import { formatStudentDisplayName } from "@/lib/presentationAdapter"
 
 export interface StudentShellProps {
   children: React.ReactNode
@@ -68,7 +69,7 @@ export const StudentShell: React.FC<StudentShellProps> = ({
               <div className="flex items-center gap-2 px-3 py-1 rounded-sm bg-muted/60 border border-border/60 max-w-[15rem] min-w-0">
                 <User className="h-3.5 w-3.5 text-accent shrink-0" aria-hidden="true" />
                 <span className="font-semibold text-foreground truncate">
-                  {user?.displayName || academicProfile?.name || "Student"}
+                  {formatStudentDisplayName(user?.displayName || academicProfile?.name) || "Student"}
                 </span>
                 <span className="font-mono text-muted-foreground shrink-0">
                   ({user?.studentId || academicProfile?.studentId || user?.username || "Profile unavailable"})
@@ -135,7 +136,7 @@ export const StudentShell: React.FC<StudentShellProps> = ({
             <div className="py-2 border-b border-border/60 text-xs text-muted-foreground">
               Signed in as{" "}
               <strong className="text-foreground">
-                {user?.displayName || academicProfile?.name || "Student"}
+                {formatStudentDisplayName(user?.displayName || academicProfile?.name) || "Student"}
               </strong>
             </div>
             {navLinks.map((link) => {
@@ -180,7 +181,7 @@ export const StudentShell: React.FC<StudentShellProps> = ({
       {/* Backend-Authoritative Academic Profile Bar */}
       <section
         className="bg-ivory-100/90 border-b border-border px-4 py-2.5 text-xs text-muted-foreground"
-        aria-label="Verified Academic Profile"
+        aria-label="Student Academic Profile"
       >
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
@@ -189,19 +190,19 @@ export const StudentShell: React.FC<StudentShellProps> = ({
               Academic Profile (Read-Only):
             </span>
             <span className="text-foreground font-semibold text-xs">
-              {academicProfile ? `${academicProfile.branch} Branch` : "Verified profile unavailable"}
+              {academicProfile ? `${academicProfile.branch} Branch` : "Academic profile unavailable"}
             </span>
           </div>
 
           <div className="flex items-center gap-4 text-xs font-mono">
             <span className="flex items-center gap-1.5">
-              <span className="text-muted-foreground">Cumulative GPA:</span>
+              <span className="text-muted-foreground">Recorded CGPA:</span>
               <strong className="font-mono font-bold text-primary text-xs px-2 py-0.5 rounded bg-card border border-border/80">
                 {academicProfile ? academicProfile.cgpa.toFixed(2) : "—"}
               </strong>
             </span>
             <span className="hidden sm:inline border-l border-border pl-3 text-muted-foreground">
-              {academicProfile ? "Backend Authoritative Record" : "Refresh to retry profile lookup"}
+              {academicProfile ? "Stored Institutional Record" : "Refresh to retry profile lookup"}
             </span>
           </div>
         </div>
@@ -216,7 +217,7 @@ export const StudentShell: React.FC<StudentShellProps> = ({
       <footer className="border-t border-border bg-card/60 py-4 px-4 sm:px-6 text-xs text-muted-foreground select-none">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
           <span>HireFlow Candidate Opportunity Hub • Career Services</span>
-          <span>Student Portal</span>
+          <span>Representative demonstration dataset active • Academic records reflect stored entries</span>
         </div>
       </footer>
     </div>

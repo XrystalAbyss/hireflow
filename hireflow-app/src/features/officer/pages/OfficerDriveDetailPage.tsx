@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { DriveDialog } from '../components/DriveDialog'
 import { DriveCloseDialog } from '../components/DriveCloseDialog'
 import { useOfficerDrive } from '../api/officerApi'
+import { formatCompanyDisplayName } from '@/lib/presentationAdapter'
 
 export function OfficerDriveDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -51,7 +52,7 @@ export function OfficerDriveDetailPage() {
     <div className="space-y-6">
       <PageHeading
         title={drive.jobTitle}
-        description={`Recruitment Campaign ID: ${drive.id} • Partner: ${drive.companyName}`}
+        description={`Recruitment Campaign ID: ${drive.id} • Partner: ${formatCompanyDisplayName(drive.companyName)}`}
         breadcrumbs={[
           { label: 'Officer', href: '/officer/dashboard' },
           { label: 'Recruitment Drives', href: '/officer/drives' },

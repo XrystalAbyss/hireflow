@@ -184,7 +184,7 @@ export const OfficerShell: React.FC<OfficerShellProps> = ({ children }) => {
       <footer className="border-t border-border bg-card/60 py-3.5 px-4 sm:px-6 text-xs text-muted-foreground select-none">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
           <span>Placement Command Center • Interview Scheduling Studio</span>
-          <span>HireFlow Operational Administration</span>
+          <span>Representative demonstration dataset active • Academic records reflect stored entries</span>
         </div>
       </footer>
     </div>

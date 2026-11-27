@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Pagination } from '@/components/ui/pagination'
 import { CompanyDialog } from '../components/CompanyDialog'
 import { useOfficerCompanies } from '../api/officerApi'
+import { formatCompanyDisplayName } from '@/lib/presentationAdapter'
 import type { OfficerCompanyDetailDto } from '@/types/api'
 
 export function OfficerCompaniesPage() {
@@ -61,7 +62,7 @@ export function OfficerCompaniesPage() {
         cell: ({ row }) => (
           <div>
             <span className="font-medium text-foreground block">
-              {row.original.name}
+              {formatCompanyDisplayName(row.original.name)}
             </span>
             <span className="text-xs text-muted-foreground sm:hidden">
               {row.original.industry}
@@ -114,7 +115,7 @@ export function OfficerCompaniesPage() {
               size="sm"
               onClick={() => navigate(`/officer/companies/${row.original.id}`)}
               className="h-7 text-xs px-2.5 gap-1"
-              aria-label={`Dossier for ${row.original.name}`}
+              aria-label={`Dossier for ${formatCompanyDisplayName(row.original.name)}`}
             >
               <Eye className="h-3 w-3" />
               <span>Dossier</span>

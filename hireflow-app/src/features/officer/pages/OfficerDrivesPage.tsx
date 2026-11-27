@@ -16,6 +16,7 @@ import { Pagination } from '@/components/ui/pagination'
 import { DriveDialog } from '../components/DriveDialog'
 import { DriveCloseDialog } from '../components/DriveCloseDialog'
 import { useOfficerDrives, useOfficerCompanies } from '../api/officerApi'
+import { formatCompanyDisplayName } from '@/lib/presentationAdapter'
 import type { OfficerDriveDetailDto, OfficerCompanyDetailDto } from '@/types/api'
 
 export function OfficerDrivesPage() {
@@ -75,7 +76,7 @@ export function OfficerDrivesPage() {
               {row.original.jobTitle}
             </span>
             <span className="text-xs text-muted-foreground">
-              {row.original.companyName}
+              {formatCompanyDisplayName(row.original.companyName)}
             </span>
           </div>
         ),

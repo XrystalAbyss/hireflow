@@ -138,7 +138,7 @@ describe('HireFlow Student Opportunity Hub Tests', () => {
       expect(screen.getByText('9.15')).toBeInTheDocument()
       expect(screen.getByText('Computer Science')).toBeInTheDocument()
       expect(screen.getByText('2026')).toBeInTheDocument()
-      expect(screen.getByText('Verified Student')).toBeInTheDocument()
+      expect(screen.getByText('Registered Student')).toBeInTheDocument()
     })
 
     it('enforces read-only institutional record without edit triggers', () => {

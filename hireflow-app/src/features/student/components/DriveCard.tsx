@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Link } from 'react-router-dom'
 import type { StudentDriveItemDto } from '@/types/api'
 import { EligibilityStatusBadge } from '@/components/domain/eligibility-status-badge'
+import { formatCompanyDisplayName } from '@/lib/presentationAdapter'
 import { Button } from '@/components/ui/button'
 import {
   Building2,
@@ -38,8 +39,8 @@ export const DriveCard: React.FC<DriveCardProps> = ({
               <Building2 className="h-4 w-4" aria-hidden="true" />
             </div>
             <div className="min-w-0 flex-1">
-              <span className="font-semibold text-xs text-foreground uppercase tracking-wider block leading-tight line-clamp-1" title={drive.companyName}>
-                {drive.companyName}
+              <span className="font-semibold text-xs text-foreground uppercase tracking-wider block leading-tight line-clamp-1" title={formatCompanyDisplayName(drive.companyName)}>
+                {formatCompanyDisplayName(drive.companyName)}
               </span>
               <span className="font-mono text-[11px] text-muted-foreground block mt-0.5">
                 {drive.id}

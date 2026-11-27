@@ -12,6 +12,12 @@ import { PageHeading } from '@/components/domain/page-heading'
 import { ApplicationStatusBadge } from '@/components/domain/application-status-badge'
 import { Button } from '@/components/ui/button'
 import { formatLocalDateTime } from '@/lib/dateUtils'
+import {
+  formatStudentDisplayName,
+  formatCompanyDisplayName,
+  formatContactEmail,
+  formatEligibilityExplanation,
+} from '@/lib/presentationAdapter'
 import { useOfficerApplication, useShortlistApplicationMutation } from '../api/officerApi'
 
 export function OfficerApplicationDetailPage() {
@@ -65,8 +71,8 @@ export function OfficerApplicationDetailPage() {
   return (
     <div className="space-y-6">
       <PageHeading
-        title={application.studentName}
-        description={`Application ID: ${application.id} • Candidate Roll Number: ${application.studentId}`}
+        title={formatStudentDisplayName(application.studentName)}
+        description={`${application.branch} • Application ${application.id}`}
         breadcrumbs={[
           { label: 'Officer', href: '/officer/dashboard' },
           { label: 'Recruitment Drives', href: '/officer/drives' },
@@ -143,7 +149,7 @@ export function OfficerApplicationDetailPage() {
               </span>
             </div>
             <div>
-              <span className="text-muted-foreground block uppercase font-mono">Verified CGPA</span>
+              <span className="text-muted-foreground block uppercase font-mono">Recorded CGPA</span>
               <span className={`font-mono text-xl font-bold block mt-0.5 ${isHighCgpa ? 'text-brass-700 dark:text-brass-400' : 'text-accent'}`}>
                 {application.cgpa.toFixed(2)}
               </span>
@@ -157,7 +163,7 @@ export function OfficerApplicationDetailPage() {
             </div>
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <Mail className="h-3.5 w-3.5" />
-              <span>{application.studentEmail}</span>
+              <span>{formatContactEmail(application.studentEmail).display}</span>
             </div>
           </div>
         </div>
@@ -176,7 +182,7 @@ export function OfficerApplicationDetailPage() {
               <span className="font-medium text-foreground text-sm block mt-0.5">
                 {application.jobTitle}
               </span>
-              <span className="text-muted-foreground">{application.companyName}</span>
+              <span className="text-muted-foreground">{formatCompanyDisplayName(application.companyName)}</span>
             </div>
 
             <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -184,16 +190,19 @@ export function OfficerApplicationDetailPage() {
               <span>Submission Timestamp: {formatLocalDateTime(application.appliedAt)}</span>
             </div>
 
-            {application.remarks && (
-              <div className="pt-2 border-t border-border">
-                <span className="text-muted-foreground block uppercase font-mono mb-1">
-                  Candidate Remarks
-                </span>
-                <p className="p-2.5 rounded-sm bg-muted/30 text-foreground border border-border/80">
-                  {application.remarks}
-                </p>
-              </div>
-            )}
+            <div className="pt-2 border-t border-border">
+              <span className="text-muted-foreground block uppercase font-mono mb-1">
+                Eligibility &amp; Status Assessment
+              </span>
+              <p className="p-2.5 rounded-sm bg-muted/30 text-foreground border border-border/80">
+                {formatEligibilityExplanation({
+                  status: application.status,
+                  remarks: application.remarks,
+                  cgpa: application.cgpa,
+                  branch: application.branch,
+                })}
+              </p>
+            </div>
           </div>
         </div>
       </div>

@@ -18,6 +18,10 @@ import {
   useOfficerDrives,
   useOfficerInterviewers,
 } from '../api/officerApi'
+import {
+  formatCompanyDisplayName,
+  formatInterviewerDisplayName,
+} from '@/lib/presentationAdapter'
 
 export function OfficerCompanyDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -58,7 +62,7 @@ export function OfficerCompanyDetailPage() {
   return (
     <div className="space-y-6">
       <PageHeading
-        title={company.name}
+        title={formatCompanyDisplayName(company.name)}
         description={`Corporate Partner ID: ${company.id} • Industry: ${company.industry}`}
         breadcrumbs={[
           { label: 'Officer', href: '/officer/dashboard' },
@@ -210,10 +214,10 @@ export function OfficerCompanyDetailPage() {
               >
                 <div>
                   <span className="font-mono text-xs text-muted-foreground">{i.id}</span>
-                  <p className="font-medium text-foreground text-sm mt-0.5">{i.name}</p>
+                  <p className="font-medium text-foreground text-sm mt-0.5">{formatInterviewerDisplayName(i.name)}</p>
                 </div>
                 <span className="text-xs text-muted-foreground mt-2 block">
-                  Employer: {i.companyName}
+                  Employer: {formatCompanyDisplayName(i.companyName)}
                 </span>
               </div>
             ))}

@@ -18,6 +18,11 @@ import { Pagination } from '@/components/ui/pagination'
 import { CandidateDetailDialog } from '../components/CandidateDetailDialog'
 import { formatLocalDateTime } from '@/lib/dateUtils'
 import {
+  formatStudentDisplayName,
+  formatCompanyDisplayName,
+  formatContactEmail,
+} from '@/lib/presentationAdapter'
+import {
   useOfficerDriveApplications,
   useOfficerDrive,
   useOfficerDrives,
@@ -71,7 +76,7 @@ export function OfficerCandidateReviewPage() {
       try {
         const updated = await shortlistMutation.mutateAsync(appId)
         setShortlistSuccessMsg(
-          `Candidate '${updated.studentName}' (${updated.studentId}) successfully shortlisted.`
+          `Candidate '${formatStudentDisplayName(updated.studentName)}' (${updated.studentId}) successfully shortlisted.`
         )
         refetch()
       } catch (err: unknown) {
@@ -96,16 +101,22 @@ export function OfficerCandidateReviewPage() {
       {
         accessorKey: 'studentName',
         header: 'Candidate Name',
-        cell: ({ row }) => (
-          <div>
-            <span className="font-medium text-foreground block">
-              {row.original.studentName}
-            </span>
-            <span className="text-xs text-muted-foreground block truncate max-w-[200px]">
-              {row.original.studentEmail}
-            </span>
-          </div>
-        ),
+        cell: ({ row }) => {
+          const displayName = formatStudentDisplayName(row.original.studentName)
+          const contact = formatContactEmail(row.original.studentEmail)
+          return (
+            <div>
+              <span className="font-medium text-foreground block">
+                {displayName}
+              </span>
+              {!contact.isPlaceholder && (
+                <span className="text-xs text-muted-foreground block truncate max-w-[200px]">
+                  {contact.display}
+                </span>
+              )}
+            </div>
+          )
+        },
       },
       {
         accessorKey: 'branch',
@@ -118,7 +129,7 @@ export function OfficerCandidateReviewPage() {
       },
       {
         accessorKey: 'cgpa',
-        header: 'Verified CGPA',
+        header: 'Recorded CGPA',
         cell: ({ row }) => {
           const cgpa = row.original.cgpa
           const isHigh = cgpa >= 8.5
@@ -171,7 +182,7 @@ export function OfficerCandidateReviewPage() {
                 size="sm"
                 onClick={() => setSelectedApp(app)}
                 className="h-7 text-xs px-2"
-                aria-label={`View dossier for ${app.studentName}`}
+                aria-label={`View dossier for ${formatStudentDisplayName(app.studentName)}`}
               >
                 <Eye className="h-3 w-3" />
               </Button>
@@ -182,7 +193,7 @@ export function OfficerCandidateReviewPage() {
                   onClick={() => handleShortlist(app.id)}
                   disabled={isRowShortlisting}
                   className="h-7 text-xs px-2.5 gap-1 bg-accent hover:bg-accent/90 text-accent-foreground font-medium"
-                  aria-label={`Shortlist ${app.studentName}`}
+                  aria-label={`Shortlist ${formatStudentDisplayName(app.studentName)}`}
                 >
                   <UserCheck className="h-3 w-3" />
                   <span>{isRowShortlisting ? 'Saving...' : 'Shortlist'}</span>
@@ -207,7 +218,7 @@ export function OfficerCandidateReviewPage() {
         title="Candidate Application Review"
         description={
           drive
-            ? `Candidate roster for ${drive.jobTitle} at ${drive.companyName}. Individual candidate evaluation and shortlisting.`
+            ? `Candidate roster for ${drive.jobTitle} at ${formatCompanyDisplayName(drive.companyName)}. Individual candidate evaluation and shortlisting.`
             : 'Candidate roster review and qualification shortlisting.'
         }
         breadcrumbs={[
@@ -239,7 +250,7 @@ export function OfficerCandidateReviewPage() {
             >
               {allDrives.map((d) => (
                 <option key={d.id} value={d.id}>
-                  {d.id} - {d.jobTitle} ({d.companyName})
+                  {d.jobTitle} — {formatCompanyDisplayName(d.companyName)}
                 </option>
               ))}
             </select>
@@ -285,7 +296,7 @@ export function OfficerCandidateReviewPage() {
             </div>
             <div>
               <span className="font-semibold text-foreground text-sm block">
-                {drive.companyName} • {drive.jobTitle}
+                {formatCompanyDisplayName(drive.companyName)} • {drive.jobTitle}
               </span>
               <span className="font-mono text-muted-foreground">
                 Cutoff: CGPA {drive.minimumCgpa.toFixed(2)} • Allowed: {drive.eligibleBranches.join(', ')}
@@ -359,6 +370,7 @@ export function OfficerCandidateReviewPage() {
         open={Boolean(selectedApp)}
         onOpenChange={(open) => !open && setSelectedApp(null)}
         application={selectedApp}
+        drive={drive}
         onSuccess={() => {
           refetch()
           setSelectedApp(null)

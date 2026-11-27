@@ -12,6 +12,10 @@ import { Badge } from '@/components/ui/badge'
 import { InterviewerDialog } from '../components/InterviewerDialog'
 import { RoomDialog } from '../components/RoomDialog'
 import {
+  formatCompanyDisplayName,
+  formatInterviewerDisplayName,
+} from '@/lib/presentationAdapter'
+import {
   useOfficerInterviewers,
   useOfficerRooms,
   useOfficerCompanies,
@@ -208,10 +212,10 @@ export function OfficerResourcesPage() {
                           {i.id}
                         </td>
                         <td className="py-2.5 px-3.5 font-medium text-foreground">
-                          {i.name}
+                          {formatInterviewerDisplayName(i.name)}
                         </td>
                         <td className="py-2.5 px-3.5 text-muted-foreground">
-                          {i.companyName} ({i.companyId})
+                          {formatCompanyDisplayName(i.companyName)} ({i.companyId})
                         </td>
                         <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
                           <Button
@@ -219,7 +223,7 @@ export function OfficerResourcesPage() {
                             size="sm"
                             onClick={() => handleEditInterviewer(i)}
                             className="h-7 text-xs px-2 gap-1"
-                            aria-label={`Edit interviewer ${i.name}`}
+                            aria-label={`Edit interviewer ${formatInterviewerDisplayName(i.name)}`}
                           >
                             <Edit3 className="h-3 w-3" />
                             <span>Edit</span>

@@ -4,6 +4,10 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import type { ProposedSessionDto } from '@/types/api'
 import { parseCampusLocalDateTime } from '../../utils/schedulingUtils'
+import {
+  formatStudentDisplayName,
+  formatInterviewerDisplayName,
+} from '@/lib/presentationAdapter'
 
 export interface SchedulingDataTableProps {
   proposedSessions: ProposedSessionDto[]
@@ -86,7 +90,7 @@ export const SchedulingDataTable: React.FC<SchedulingDataTableProps> = ({
                       {/* Candidate Identity */}
                       <td className="px-3.5 py-2.5">
                         <div className="font-semibold text-foreground">
-                          {sess.studentName}
+                          {formatStudentDisplayName(sess.studentName)}
                         </div>
                         <div className="font-mono text-[11px] text-muted-foreground">
                           {sess.studentId}
@@ -102,7 +106,7 @@ export const SchedulingDataTable: React.FC<SchedulingDataTableProps> = ({
                       <td className="px-3.5 py-2.5">
                         <div className="flex items-center gap-1.5 text-foreground font-medium">
                           <User className="h-3 w-3 text-academic-teal shrink-0" />
-                          <span>{sess.interviewerName}</span>
+                          <span>{formatInterviewerDisplayName(sess.interviewerName)}</span>
                         </div>
                         <div className="font-mono text-[10px] text-muted-foreground">
                           {sess.interviewerId}

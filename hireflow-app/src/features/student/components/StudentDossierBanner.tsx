@@ -1,6 +1,7 @@
 import * as React from 'react'
 import type { StudentProfileDto } from '@/types/api'
-import { GraduationCap, ShieldCheck, Mail, Calendar, HelpCircle } from 'lucide-react'
+import { formatStudentDisplayName, formatContactEmail } from '@/lib/presentationAdapter'
+import { GraduationCap, UserCheck, Mail, Calendar, HelpCircle } from 'lucide-react'
 
 export interface StudentDossierBannerProps {
   profile: StudentProfileDto
@@ -11,10 +12,13 @@ export const StudentDossierBanner: React.FC<StudentDossierBannerProps> = ({
   profile,
   className = '',
 }) => {
+  const displayName = formatStudentDisplayName(profile.name)
+  const contact = formatContactEmail(profile.email)
+
   return (
     <div
       className={`rounded-lg border border-border bg-card p-5 sm:p-6 shadow-xs ${className}`}
-      aria-label="Verified Academic Dossier"
+      aria-label="Student Academic Profile"
     >
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border/80">
         <div className="flex items-start sm:items-center gap-3.5">
@@ -22,20 +26,20 @@ export const StudentDossierBanner: React.FC<StudentDossierBannerProps> = ({
             <GraduationCap className="h-6 w-6 text-accent" aria-hidden="true" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h2 className="font-serif font-bold text-lg sm:text-xl text-foreground">
-                {profile.name}
+                {displayName}
               </h2>
               <span className="inline-flex items-center gap-1 text-xs font-medium text-teal-800 bg-teal-900/10 border border-teal-700/20 px-2 py-0.5 rounded-full">
-                <ShieldCheck className="h-3 w-3" aria-hidden="true" />
-                Verified Student
+                <UserCheck className="h-3 w-3" aria-hidden="true" />
+                Registered Student
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-0.5">
               <span className="font-mono text-foreground font-medium">Roll No: {profile.id}</span>
               <span className="flex items-center gap-1">
                 <Mail className="h-3 w-3" aria-hidden="true" />
-                {profile.email}
+                {contact.display}
               </span>
             </div>
           </div>
@@ -45,7 +49,7 @@ export const StudentDossierBanner: React.FC<StudentDossierBannerProps> = ({
         <div className="flex items-center gap-3 shrink-0 self-start md:self-auto bg-ivory-100/90 border border-border px-3.5 py-2 rounded-md">
           <div className="text-right">
             <span className="text-xs uppercase tracking-wider text-muted-foreground block font-sans">
-              Cumulative GPA
+              Recorded CGPA
             </span>
             <span className="font-mono font-bold text-lg text-primary leading-tight">
               {profile.cgpa.toFixed(2)}

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import type { StudentDriveItemDto, StudentApplicationDetailDto } from '@/types/api'
 import { formatLocalDateTime } from '@/lib/dateUtils'
+import { formatCompanyDisplayName, formatStudentDisplayName } from '@/lib/presentationAdapter'
 
 export interface ApplicationConfirmationModalProps {
   isOpen: boolean
@@ -158,7 +159,7 @@ export const ApplicationConfirmationModal: React.FC<ApplicationConfirmationModal
             <div className="rounded-md border border-border bg-muted/40 p-3.5 space-y-2 text-xs">
               <div className="flex items-center gap-2 font-semibold text-foreground">
                 <Building2 className="h-4 w-4 text-accent" aria-hidden="true" />
-                <span>{drive.companyName}</span>
+                <span>{formatCompanyDisplayName(drive.companyName)}</span>
               </div>
               <div className="flex items-center gap-2 text-muted-foreground pl-6">
                 <Briefcase className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -170,11 +171,11 @@ export const ApplicationConfirmationModal: React.FC<ApplicationConfirmationModal
               </div>
             </div>
 
-            {/* Submitting Student Dossier Verification */}
+            {/* Submitting Student Academic Record */}
             <div className="rounded-md border border-border/80 bg-card p-3 space-y-1.5 text-xs">
               <div className="flex items-center gap-2 font-semibold text-primary">
                 <GraduationCap className="h-4 w-4 text-accent" aria-hidden="true" />
-                <span>Verified Candidate Credentials</span>
+                <span>Candidate Academic Record</span>
               </div>
               <div className="grid grid-cols-2 gap-2 pt-1 text-muted-foreground">
                 <div>
@@ -183,14 +184,14 @@ export const ApplicationConfirmationModal: React.FC<ApplicationConfirmationModal
                 </div>
                 <div>
                   <span>Candidate:</span>{' '}
-                  <strong className="text-foreground">{studentProfile.name}</strong>
+                  <strong className="text-foreground">{formatStudentDisplayName(studentProfile.name)}</strong>
                 </div>
                 <div>
                   <span>Department:</span>{' '}
                   <strong className="text-foreground">{studentProfile.branch}</strong>
                 </div>
                 <div>
-                  <span>Verified CGPA:</span>{' '}
+                  <span>Recorded CGPA:</span>{' '}
                   <strong className="font-mono text-teal-800 font-bold">
                     {studentProfile.cgpa.toFixed(2)}
                   </strong>

@@ -2,6 +2,7 @@ import * as React from 'react'
 import { AlertCircle, UserX, Info } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import type { UnscheduledCandidateDto } from '@/types/api'
+import { formatStudentDisplayName } from '@/lib/presentationAdapter'
 
 export interface UnscheduledCandidatesListProps {
   unscheduledCandidates: UnscheduledCandidateDto[]
@@ -68,7 +69,7 @@ export const UnscheduledCandidatesList: React.FC<UnscheduledCandidatesListProps>
               {unscheduledCandidates.map((c) => (
                 <tr key={c.applicationId} className="hover:bg-muted/30 transition-colors">
                   <td className="px-3 py-2.5 font-semibold text-foreground">
-                    {c.studentName}
+                    {formatStudentDisplayName(c.studentName)}
                   </td>
                   <td className="px-3 py-2.5 font-mono text-[11px] text-muted-foreground">
                     {c.studentId}
