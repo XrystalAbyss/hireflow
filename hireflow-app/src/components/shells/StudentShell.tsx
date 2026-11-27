@@ -202,7 +202,7 @@ export const StudentShell: React.FC<StudentShellProps> = ({
               </strong>
             </span>
             <span className="hidden sm:inline border-l border-border pl-3 text-muted-foreground">
-              {academicProfile ? "Stored Institutional Record" : "Refresh to retry profile lookup"}
+              {academicProfile ? "Recorded Academic Details" : "Refresh to retry profile lookup"}
             </span>
           </div>
         </div>

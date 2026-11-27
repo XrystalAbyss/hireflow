@@ -134,7 +134,7 @@ describe('HireFlow Student Opportunity Hub Tests', () => {
       render(<StudentDossierBanner profile={mockProfile} />)
 
       expect(screen.getByText('Aarav Sharma')).toBeInTheDocument()
-      expect(screen.getByText(/Roll No: STU-2022-CS0144/i)).toBeInTheDocument()
+      expect(screen.getByText(/Student ID: STU-2022-CS0144/i)).toBeInTheDocument()
       expect(screen.getByText('9.15')).toBeInTheDocument()
       expect(screen.getByText('Computer Science')).toBeInTheDocument()
       expect(screen.getByText('2026')).toBeInTheDocument()

@@ -143,7 +143,7 @@ export function OfficerApplicationDetailPage() {
 
           <div className="grid grid-cols-2 gap-4 text-xs">
             <div>
-              <span className="text-muted-foreground block uppercase font-mono">Roll Number</span>
+              <span className="text-muted-foreground block uppercase font-mono">Student ID</span>
               <span className="font-mono text-sm font-semibold text-foreground block mt-0.5">
                 {application.studentId}
               </span>

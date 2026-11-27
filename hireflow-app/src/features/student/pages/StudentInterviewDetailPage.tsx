@@ -192,7 +192,7 @@ export const StudentInterviewDetailPage: React.FC = () => {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-2 border-t border-border/60">
           <div>
             <span className="text-[11px] uppercase tracking-wider text-muted-foreground block">
-              Candidate Roll No
+              Student ID
             </span>
             <span className="font-mono font-bold text-foreground">{session.studentId}</span>
           </div>

@@ -199,7 +199,7 @@ export const StudentApplicationDetailPage: React.FC = () => {
 
           <div className="p-3.5 rounded-md bg-muted/40 border border-border/60 space-y-1">
             <span className="text-[11px] uppercase tracking-wider text-muted-foreground block">
-              Candidate Roll No
+              Student ID
             </span>
             <span className="font-mono font-bold text-foreground block text-sm">
               {app.studentId}

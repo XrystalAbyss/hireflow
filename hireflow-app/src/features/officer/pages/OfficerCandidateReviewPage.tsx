@@ -91,7 +91,7 @@ export function OfficerCandidateReviewPage() {
     () => [
       {
         accessorKey: 'studentId',
-        header: 'Roll Number',
+        header: 'Student ID',
         cell: ({ row }) => (
           <span className="font-mono text-xs font-semibold text-foreground uppercase">
             {row.original.studentId}

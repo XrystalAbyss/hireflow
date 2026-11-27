@@ -179,7 +179,7 @@ export const ApplicationConfirmationModal: React.FC<ApplicationConfirmationModal
               </div>
               <div className="grid grid-cols-2 gap-2 pt-1 text-muted-foreground">
                 <div>
-                  <span>Roll No:</span>{' '}
+                  <span>Student ID:</span>{' '}
                   <strong className="font-mono text-foreground">{studentProfile.studentId}</strong>
                 </div>
                 <div>

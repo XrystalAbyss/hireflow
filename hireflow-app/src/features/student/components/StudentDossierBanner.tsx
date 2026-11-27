@@ -36,7 +36,7 @@ export const StudentDossierBanner: React.FC<StudentDossierBannerProps> = ({
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-0.5">
-              <span className="font-mono text-foreground font-medium">Roll No: {profile.id}</span>
+              <span className="font-mono text-foreground font-medium">Student ID: {profile.id}</span>
               <span className="flex items-center gap-1">
                 <Mail className="h-3 w-3" aria-hidden="true" />
                 {contact.display}
